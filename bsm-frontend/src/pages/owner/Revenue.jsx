@@ -78,6 +78,9 @@ export default function Revenue() {
   const [rawData, setRawData] = useState([]);
   const [tableData, setTableData] = useState([]);
 
+  const [showEmptyRooms, setShowEmptyRooms] = useState(false);
+  const [showUnpaidInvoices, setShowUnpaidInvoices] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -86,7 +89,6 @@ export default function Revenue() {
     getHouses().then(setHouses).catch(e => setError(e.message));
   }, []);
 
-  /* ===== FETCH ===== */
   useEffect(() => {
     fetchSummary();
     fetchChartRevenue();
@@ -184,63 +186,114 @@ export default function Revenue() {
     saveAs(new Blob([buffer]), `DoanhThu_${year}_${month}.xlsx`);
   }
 
-  /* ================= UI ================= */
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50">
       <div className="max-w-7xl mx-auto px-6 py-10 space-y-10">
 
-        {/* HEADER */}
-        <div>
-          <h1 className="text-3xl font-extrabold text-slate-800">
-            Thống kê doanh thu
-          </h1>
-          <p className="text-slate-500 text-sm">
-            Lọc theo năm · nhà · tháng
-          </p>
+        <h1 className="text-3xl font-extrabold text-slate-800">
+          Thống kê doanh thu
+        </h1>
+
+        {/* FILTER + OPTIONS */}
+        <div className="bg-white rounded-3xl shadow-md p-6 space-y-4">
+
+          <div className="flex flex-wrap gap-4 items-center">
+            <select value={year} onChange={(e)=>setYear(+e.target.value)}
+              className="border px-4 py-2 rounded-xl">
+              {Array.from({ length: 6 }, (_, i) => currentYear - 3 + i)
+                .map(y => <option key={y}>{y}</option>)}
+            </select>
+
+            <select value={houseId} onChange={(e)=>setHouseId(e.target.value)}
+              className="border px-4 py-2 rounded-xl">
+              <option value="">Tất cả nhà</option>
+              {houses.map(h=>(
+                <option key={h.id} value={h.id}>{h.name}</option>
+              ))}
+            </select>
+
+            <select value={month} onChange={(e)=>setMonth(e.target.value)}
+              className="border px-4 py-2 rounded-xl">
+              <option value="">Tất cả tháng</option>
+              {months.map(m=>(
+                <option key={m} value={m}>Tháng {m}</option>
+              ))}
+            </select>
+
+            <button
+              onClick={exportExcel}
+              className="ml-auto bg-emerald-500 hover:bg-emerald-600
+                         text-white px-6 py-2 rounded-xl font-semibold">
+              ⬇ Xuất Excel
+            </button>
+          </div>
+
+          {/* NEW OPTIONS */}
+          <div className="flex gap-6 text-sm">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={showEmptyRooms}
+                onChange={() => setShowEmptyRooms(!showEmptyRooms)}
+              />
+              Xem phòng trống
+            </label>
+
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={showUnpaidInvoices}
+                onChange={() => setShowUnpaidInvoices(!showUnpaidInvoices)}
+              />
+              Thống kê hóa đơn chưa thanh toán
+            </label>
+          </div>
         </div>
-
-        {/* FILTER */}
-        <div className="bg-white/90 backdrop-blur rounded-3xl shadow-md
-                        p-6 flex flex-wrap gap-4 items-center">
-          <select value={year} onChange={(e)=>setYear(+e.target.value)}
-            className="border px-4 py-2 rounded-xl">
-            {Array.from({ length: 6 }, (_, i) => currentYear - 3 + i)
-              .map(y => <option key={y}>{y}</option>)}
-          </select>
-
-          <select value={houseId} onChange={(e)=>setHouseId(e.target.value)}
-            className="border px-4 py-2 rounded-xl">
-            <option value="">Tất cả nhà</option>
-            {houses.map(h=>(
-              <option key={h.id} value={h.id}>{h.name}</option>
-            ))}
-          </select>
-
-          <select value={month} onChange={(e)=>setMonth(e.target.value)}
-            className="border px-4 py-2 rounded-xl">
-            <option value="">Tất cả tháng</option>
-            {months.map(m=>(
-              <option key={m} value={m}>Tháng {m}</option>
-            ))}
-          </select>
-
-          <button
-            onClick={exportExcel}
-            className="ml-auto bg-emerald-500 hover:bg-emerald-600
-                       text-white px-6 py-2 rounded-xl font-semibold shadow">
-            ⬇ Xuất Excel
-          </button>
-        </div>
-
-        {error && <p className="text-red-500">{error}</p>}
 
         {/* KPI */}
         {summary && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <StatCard title="Khách thuê" value={summary.totalTenants} total={summary.totalRooms || 1} color="#22c55e" />
-            <StatCard title="Nhà trọ" value={summary.totalHouses} total={summary.totalHouses || 1} color="#0ea5e9" />
-            <StatCard title="Phòng trọ" value={summary.totalRooms} total={summary.totalRooms || 1} color="#f59e0b" />
-            <div className="bg-white/90 backdrop-blur rounded-3xl shadow-md p-6 text-center">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+
+            <StatCard
+              title="Khách thuê"
+              value={summary.totalTenants}
+              total={summary.totalRooms || 1}
+              color="#22c55e"
+            />
+
+            <StatCard
+              title="Nhà trọ"
+              value={summary.totalHouses}
+              total={summary.totalHouses || 1}
+              color="#0ea5e9"
+            />
+
+            <StatCard
+              title="Phòng trọ"
+              value={summary.totalRooms}
+              total={summary.totalRooms || 1}
+              color="#f59e0b"
+            />
+
+            {showEmptyRooms && (
+              <StatCard
+                title="Phòng trống"
+                value={summary.emptyRooms || 0}
+                total={summary.totalRooms || 1}
+                color="#ef4444"
+              />
+            )}
+
+            {showUnpaidInvoices && (
+              <StatCard
+                title="Hóa đơn chưa thanh toán"
+                value={summary.unpaidInvoices || 0}
+                total={summary.totalInvoices || 1}
+                color="#8b5cf6"
+              />
+            )}
+
+            <div className="bg-white rounded-3xl shadow-md p-6 text-center">
               <p className="text-sm text-slate-500">Doanh thu năm</p>
               <p className="text-2xl font-extrabold text-indigo-600">
                 {totalYearRevenue.toLocaleString("vi-VN")} đ
@@ -249,12 +302,11 @@ export default function Revenue() {
           </div>
         )}
 
-        {/* BAR */}
-        <div className="bg-white/90 backdrop-blur rounded-3xl shadow-md p-8">
+        {/* CHART */}
+        <div className="bg-white rounded-3xl shadow-md p-8">
           <Bar data={chartData} />
         </div>
-
-        {/* TABLE */}
+             {/* TABLE */}
         <div className="bg-white/90 backdrop-blur rounded-3xl shadow-md overflow-hidden">
           <table className="w-full">
             <thead className="bg-slate-100">

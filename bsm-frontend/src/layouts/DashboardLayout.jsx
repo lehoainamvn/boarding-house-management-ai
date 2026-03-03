@@ -95,7 +95,7 @@ export default function DashboardLayout() {
       {/* ===== SIDEBAR ===== */}
       <aside className="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-white flex flex-col">
         <div className="h-16 flex items-center px-6 text-xl font-extrabold border-b border-white/10">
-          ThuNam Rental
+          Nam Rental
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-2">
@@ -131,7 +131,7 @@ export default function DashboardLayout() {
         {/* ===== HEADER ===== */}
         <header className="h-16 bg-white shadow-sm flex items-center justify-between px-8 relative">
           <h1 className="font-semibold text-slate-700">
-            Hệ thống quản lý nhà trọ ThuNam Rental
+            Hệ thống quản lý nhà trọ Nam Rental
           </h1>
 
           <div className="flex items-center gap-5">

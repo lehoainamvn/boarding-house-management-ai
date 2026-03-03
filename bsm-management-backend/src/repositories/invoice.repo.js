@@ -93,7 +93,8 @@ export async function getInvoicesByMonth(ownerId, month, houseId) {
       i.status,
       i.created_at,
       r.room_name,
-      u.name AS tenant_name
+      u.name AS tenant_name,
+      u.phone AS tenant_phone   -- 🔥 THÊM DÒNG NÀY
     FROM invoices i
     JOIN rooms r ON i.room_id = r.id
     JOIN users u ON i.tenant_id = u.id
@@ -105,8 +106,6 @@ export async function getInvoicesByMonth(ownerId, month, houseId) {
 
   return result.recordset;
 }
-
-
 export async function getInvoiceById(ownerId, invoiceId) {
   const pool = await poolPromise;
 
@@ -117,7 +116,8 @@ export async function getInvoiceById(ownerId, invoiceId) {
       SELECT 
         i.*,
         r.room_name,
-        u.name AS tenant_name
+        u.name AS tenant_name,
+        u.phone AS tenant_phone  -- 🔥 THÊM DÒNG NÀY
       FROM invoices i
       JOIN rooms r ON i.room_id = r.id
       JOIN users u ON i.tenant_id = u.id

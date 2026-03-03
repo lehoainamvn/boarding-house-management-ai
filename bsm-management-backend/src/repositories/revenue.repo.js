@@ -55,21 +55,75 @@ export async function getRevenueSummaryRepo(ownerId, year, houseId) {
 
   const result = await request.query(`
     SELECT
-      (SELECT COUNT(*) FROM users WHERE role = 'TENANT') AS totalTenants,
+      -- Tổng khách thuê thuộc owner
+      (
+        SELECT COUNT(*)
+        FROM users u
+        JOIN tenant_rooms tr ON u.id = tr.tenant_id
+        JOIN rooms r ON tr.room_id = r.id
+        WHERE u.role = 'TENANT'
+          AND r.owner_id = @owner_id
+      ) AS totalTenants,
 
-      (SELECT COUNT(*) FROM houses WHERE owner_id = @owner_id) AS totalHouses,
+      -- Tổng nhà
+      (
+        SELECT COUNT(*)
+        FROM houses
+        WHERE owner_id = @owner_id
+      ) AS totalHouses,
 
-      (SELECT COUNT(*)
-       FROM rooms r
-       WHERE r.owner_id = @owner_id
-       ${houseCondition}) AS totalRooms,
+      -- Tổng phòng
+      (
+        SELECT COUNT(*)
+        FROM rooms r
+        WHERE r.owner_id = @owner_id
+        ${houseCondition}
+      ) AS totalRooms,
 
-      (SELECT ISNULL(SUM(i.total_amount), 0)
-       FROM invoices i
-       JOIN rooms r ON i.room_id = r.id
-       WHERE r.owner_id = @owner_id
-         AND YEAR(i.created_at) = @year
-         ${houseCondition}) AS totalRevenue
+      -- Phòng trống (không có tenant đang thuê)
+      (
+        SELECT COUNT(*)
+        FROM rooms r
+        WHERE r.owner_id = @owner_id
+          AND NOT EXISTS (
+            SELECT 1
+            FROM tenant_rooms tr
+            WHERE tr.room_id = r.id
+              AND tr.end_date IS NULL
+          )
+          ${houseCondition}
+      ) AS emptyRooms,
+
+      -- Tổng hóa đơn năm
+      (
+        SELECT COUNT(*)
+        FROM invoices i
+        JOIN rooms r ON i.room_id = r.id
+        WHERE r.owner_id = @owner_id
+          AND YEAR(i.created_at) = @year
+          ${houseCondition}
+      ) AS totalInvoices,
+
+      -- Hóa đơn chưa thanh toán
+      (
+        SELECT COUNT(*)
+        FROM invoices i
+        JOIN rooms r ON i.room_id = r.id
+        WHERE r.owner_id = @owner_id
+          AND i.status = 'UNPAID'
+          AND YEAR(i.created_at) = @year
+          ${houseCondition}
+      ) AS unpaidInvoices,
+
+      -- Tổng doanh thu năm
+      (
+        SELECT ISNULL(SUM(i.total_amount), 0)
+        FROM invoices i
+        JOIN rooms r ON i.room_id = r.id
+        WHERE r.owner_id = @owner_id
+          AND YEAR(i.created_at) = @year
+          ${houseCondition}
+      ) AS totalRevenue
   `);
 
   return result.recordset[0];
