@@ -34,29 +34,18 @@ io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
   socket.on("join_room", (roomId) => {
-
-    console.log("Join room:", roomId);
-
     socket.join(roomId);
-
   });
 
   socket.on("send_message", (data) => {
-
-    console.log("New message:", data);
-
     io.to(data.room_id).emit("receive_message", data);
-
   });
 
   socket.on("disconnect", () => {
-
     console.log("User disconnected");
-
   });
 
 });
-
 // ===== MIDDLEWARE =====
 app.use(cors({
   origin: "http://localhost:5173",

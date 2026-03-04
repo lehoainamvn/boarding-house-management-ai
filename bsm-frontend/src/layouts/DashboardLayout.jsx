@@ -88,6 +88,7 @@ export default function DashboardLayout() {
     { label: "Hóa đơn", path: "/invoices" },
     { label: "Điện nước", path: "/meters" },
     { label: "Thống kê", path: "/revenue" },
+     { label: "Tin nhắn", path: "/messages" },
   ];
 
   return (
