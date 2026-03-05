@@ -15,6 +15,7 @@ import revenueRoutes from "./routes/revenue.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import messageRoutes from "./routes/message.routes.js";
+import aiRoutes from "./routes/ai.route.js";
 
 
 dotenv.config();
@@ -70,6 +71,9 @@ app.use("/api/houses", houseRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/meters", meterRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/ai", aiRoutes);
+
+
 // ===== START SERVER =====
 /* START SERVER */
 const PORT = process.env.PORT || 5000;

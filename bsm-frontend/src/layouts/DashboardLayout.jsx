@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
+import AIChatBox from "../components/AIChatBox";
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
@@ -231,6 +232,10 @@ export default function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+            <AIChatBox />
+
     </div>
+
   );
+  
 }
