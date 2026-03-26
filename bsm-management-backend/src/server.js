@@ -38,18 +38,20 @@ const io = new Server(server, {
 
 io.on("connection", (socket) => {
 
-  console.log("User connected:", socket.id);
+  console.log("✅ User connected:", socket.id);
 
   socket.on("join_room", (roomId) => {
+    console.log(`👉 ${socket.id} join room ${roomId}`);
     socket.join(roomId);
   });
 
   socket.on("send_message", (data) => {
+    console.log("📨 send:", data);
     io.to(data.room_id).emit("receive_message", data);
   });
 
   socket.on("disconnect", () => {
-    console.log("User disconnected");
+    console.log("❌ disconnected:", socket.id);
   });
 
 });

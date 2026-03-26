@@ -4,30 +4,22 @@ import { verifyToken } from "../middlewares/auth.middleware.js";
 import {
   getMessages,
   sendMessage,
-  getOwnerRooms
+  getOwnerRooms,
+  getTenantRoom
 } from "../controllers/message.controller.js";
 
 const router = express.Router();
 
-/* LẤY DANH SÁCH PHÒNG CÓ NGƯỜI THUÊ */
-router.get(
-  "/rooms",
-  verifyToken,
-  getOwnerRooms
-);
+/* ✅ TENANT: LẤY PHÒNG (ĐẶT LÊN TRÊN) */
+router.get("/my-room", verifyToken, getTenantRoom);
 
-/* LẤY TIN NHẮN THEO PHÒNG */
-router.get(
-  "/:roomId",
-  verifyToken,
-  getMessages
-);
+/* OWNER: DANH SÁCH PHÒNG */
+router.get("/rooms", verifyToken, getOwnerRooms);
 
-/* GỬI TIN NHẮN */
-router.post(
-  "/",
-  verifyToken,
-  sendMessage
-);
+/* LẤY TIN NHẮN */
+router.get("/:roomId", verifyToken, getMessages);
+
+/* GỬI */
+router.post("/", verifyToken, sendMessage);
 
 export default router;
