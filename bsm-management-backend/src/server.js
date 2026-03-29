@@ -18,7 +18,8 @@ import messageRoutes from "./routes/message.routes.js";
 import aiRoutes from "./routes/ai.route.js";
 import aiTenantRoutes from "./routes/aiTenant.route.js"
 import predictRoute from "./routes/predict.route.js";
-
+import paymentRoutes from "./routes/payment.route.js";
+import uploadRoutes from "./routes/upload.route.js";
 /* ✅ IMPORT ĐÚNG */
 import { verifyMail } from "./config/mail.js";
 
@@ -62,27 +63,26 @@ app.use(cors({
 }));
 
 app.use(express.json());
-
+app.use("/uploads", express.static("public/uploads"));
 // ===== ROUTES =====
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/houses", houseRoutes);
-app.use("/api/rooms", roomRoutes);   
-app.use("/api/tenants", tenantRoutes);
 app.use("/api", meterRoutes);
 app.use("/api/clients", clientRoutes);
 app.use("/api", invoiceRoutes);
 app.use("/api", revenueRoutes);
 app.use("/api/tenants", tenantRoutes);
-app.use("/api/houses", houseRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/meters", meterRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/ai", aiRoutes);
-app.use("/api/ai-tenant",aiTenantRoutes)
-app.use("/api", predictRoute);
+app.use("/api/ai-tenant",aiTenantRoutes);
+app.use("/api/predict-revenue", predictRoute);
+app.use("/api/payment", paymentRoutes);
 
+app.use("/api", uploadRoutes);
 // ===== START SERVER =====
 /* START SERVER */
 const PORT = process.env.PORT || 5000;

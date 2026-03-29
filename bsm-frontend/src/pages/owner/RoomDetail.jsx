@@ -245,100 +245,126 @@ export default function RoomDetail() {
     }
   }
 
+  const money = (n) => n?.toLocaleString("vi-VN") + " đ";
+
   if (loading)
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-400">
-        Đang tải...
+      <div className="flex justify-center items-center h-[60vh]">
+        <div className="animate-spin rounded-full h-10 w-10 border-4 border-slate-200 border-t-indigo-600" />
       </div>
     );
 
   if (!room)
     return (
-      <div className="min-h-screen flex items-center justify-center text-red-500">
-        Không tìm thấy phòng
+      <div className="max-w-6xl mx-auto px-6 py-12">
+        <div className="bg-white border border-red-100 text-red-600 px-6 py-4 rounded-xl shadow-sm text-sm">
+          Không tìm thấy dữ liệu phòng
+        </div>
       </div>
     );
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-6xl mx-auto px-6 py-12 space-y-10">
-
-        {/* HEADER */}
-        <div className="bg-white border rounded-2xl shadow-sm hover:shadow-md transition p-6 flex justify-between items-center">
-          {!editingName ? (
+    <div className="max-w-6xl mx-auto px-6 py-12 space-y-8">
+      
+      {/* HEADER PHÒNG */}
+      <div className="flex items-center justify-between">
+        {!editingName ? (
+          <>
             <div>
-              <h1 className="text-3xl font-bold text-slate-800">
-                🏠 {room.room_name}
+              <h1 className="text-2xl font-bold text-slate-800">
+                {room.room_name}
               </h1>
-              <button
-                onClick={() => setEditingName(true)}
-                className="text-sm text-indigo-500 hover:underline"
-              >
-                Chỉnh sửa tên
-              </button>
+              <p className="text-sm text-slate-500">
+                Quản lý thông tin chi tiết của phòng
+              </p>
             </div>
-          ) : (
-            <div className="flex gap-3">
-              <input
-                className="px-4 py-2 border rounded-xl"
-                value={roomName}
-                onChange={(e) => setRoomName(e.target.value)}
-              />
-              <button
-                onClick={saveRoomName}
-                className="px-5 py-2 bg-indigo-500 text-white rounded-xl"
-              >
-                Lưu
-              </button>
-              <button
-                onClick={() => {
-                  setRoomName(room.room_name);
-                  setEditingName(false);
-                }}
-                className="px-5 py-2 border rounded-xl"
-              >
-                Hủy
-              </button>
-            </div>
-          )}
-        </div>
+            <button
+              onClick={() => setEditingName(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm"
+            >
+              Chỉnh sửa tên
+            </button>
+          </>
+        ) : (
+          <div className="flex gap-2 w-full max-w-md">
+            <input
+              className="flex-1 px-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              value={roomName}
+              onChange={(e) => setRoomName(e.target.value)}
+            />
+            <button
+              onClick={saveRoomName}
+              className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition"
+            >
+              Lưu
+            </button>
+            <button
+              onClick={() => {
+                setRoomName(room.room_name);
+                setEditingName(false);
+              }}
+              className="px-4 py-2 border border-slate-200 text-slate-600 text-sm font-medium rounded-lg hover:bg-slate-50 transition"
+            >
+              Hủy
+            </button>
+          </div>
+        )}
+      </div>
 
-        {/* GRID */}
-        <div className="grid md:grid-cols-2 gap-8">
-          <div className="bg-white border rounded-2xl shadow-sm hover:shadow-md transition p-6 space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="font-semibold text-lg">💸 Giá dịch vụ</h3>
-              {!editingPrice && (
-                <button
-                  onClick={() => setEditingPrice(true)}
-                  className="text-indigo-500 text-sm"
-                >
-                  Chỉnh sửa
-                </button>
-              )}
-            </div>
+      {/* GRID 2 CỘT PHÍA DƯỚI */}
+      <div className="grid md:grid-cols-2 gap-8">
+        
+        {/* CỘT 1: GIÁ DỊCH VỤ */}
+        <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm p-8 space-y-6">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+            <h3 className="font-bold text-slate-800">Biểu phí dịch vụ</h3>
+            {!editingPrice && (
+              <button
+                onClick={() => setEditingPrice(true)}
+                className="text-indigo-600 text-sm font-medium hover:text-indigo-700 transition"
+              >
+                Thay đổi giá
+              </button>
+            )}
+          </div>
 
-            {!editingPrice ? (
-            <div className="text-slate-700 space-y-1">
-              <p>Giá phòng: <b>{room.room_price} đ</b></p>
-              <p>Giá điện: <b>{room.electric_price} đ/kWh</b></p>
-              {room.water_type === "METER" ? (
-                <p>Giá nước: <b>{room.water_price} đ/m³</b></p>
-              ) : (
-                <p>Nước: <b>{room.people_count} người × {room.water_price_per_person} đ</b></p>
-              )}
+          {!editingPrice ? (
+            <div className="space-y-4 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Giá phòng</span>
+                <span className="font-semibold text-slate-800">
+                  {money(room.room_price)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Giá điện</span>
+                <span className="font-semibold text-slate-800">
+                  {money(room.electric_price)} /kWh
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Giá nước</span>
+                {room.water_type === "METER" ? (
+                  <span className="font-semibold text-slate-800">
+                    {money(room.water_price)} /m³
+                  </span>
+                ) : (
+                  <span className="font-semibold text-slate-800">
+                    {room.people_count} người ×{" "}
+                    {money(room.water_price_per_person)}
+                  </span>
+                )}
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
-              <h4 className="font-semibold text-slate-700">
-                ✏️ Cập nhật giá dịch vụ
-              </h4>
-
               <div>
-                <label className="text-sm text-slate-600">Giá phòng (đ)</label>
+                <label className="text-xs font-semibold text-slate-500 uppercase">
+                  Giá phòng (đ)
+                </label>
                 <input
                   type="number"
-                  className="w-full px-4 py-2 border rounded-xl"
+                  className="w-full mt-1.5 px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                   value={priceForm.room_price}
                   onChange={(e) =>
                     setPriceForm({ ...priceForm, room_price: e.target.value })
@@ -347,64 +373,83 @@ export default function RoomDetail() {
               </div>
 
               <div>
-                <label className="text-sm text-slate-600">Giá điện (đ/kWh)</label>
+                <label className="text-xs font-semibold text-slate-500 uppercase">
+                  Giá điện (đ/kWh)
+                </label>
                 <input
                   type="number"
-                  className="w-full px-4 py-2 border rounded-xl"
+                  className="w-full mt-1.5 px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                   value={priceForm.electric_price}
                   onChange={(e) =>
-                    setPriceForm({ ...priceForm, electric_price: e.target.value })
+                    setPriceForm({
+                      ...priceForm,
+                      electric_price: e.target.value,
+                    })
                   }
                 />
               </div>
 
-              <h4 className="font-semibold text-slate-700">🚰 Tiền nước</h4>
-
-              <div className="flex gap-6 text-sm">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    checked={priceForm.water_type === "METER"}
-                    onChange={() =>
-                      setPriceForm({ ...priceForm, water_type: "METER" })
-                    }
-                  />
-                  Theo đồng hồ
+              <div className="border-t border-slate-100 pt-4">
+                <label className="text-xs font-semibold text-slate-500 uppercase block mb-2">
+                  Cách tính tiền nước
                 </label>
+                <div className="flex gap-6 text-sm">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      className="text-indigo-600 focus:ring-indigo-500"
+                      checked={priceForm.water_type === "METER"}
+                      onChange={() =>
+                        setPriceForm({ ...priceForm, water_type: "METER" })
+                      }
+                    />
+                    <span className="text-slate-700 font-medium">
+                      Theo đồng hồ
+                    </span>
+                  </label>
 
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    checked={priceForm.water_type === "PERSON"}
-                    onChange={() =>
-                      setPriceForm({ ...priceForm, water_type: "PERSON" })
-                    }
-                  />
-                  Theo người
-                </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      className="text-indigo-600 focus:ring-indigo-500"
+                      checked={priceForm.water_type === "PERSON"}
+                      onChange={() =>
+                        setPriceForm({ ...priceForm, water_type: "PERSON" })
+                      }
+                    />
+                    <span className="text-slate-700 font-medium">
+                      Theo đầu người
+                    </span>
+                  </label>
+                </div>
               </div>
 
               {priceForm.water_type === "METER" ? (
                 <div>
-                  <label className="text-sm text-slate-600">
+                  <label className="text-xs font-semibold text-slate-500 uppercase">
                     Giá nước (đ/m³)
                   </label>
                   <input
                     type="number"
-                    className="w-full px-4 py-2 border rounded-xl"
+                    className="w-full mt-1.5 px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                     value={priceForm.water_price}
                     onChange={(e) =>
-                      setPriceForm({ ...priceForm, water_price: e.target.value })
+                      setPriceForm({
+                        ...priceForm,
+                        water_price: e.target.value,
+                      })
                     }
                   />
                 </div>
               ) : (
-                <>
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-slate-600">Số người</label>
+                    <label className="text-xs font-semibold text-slate-500 uppercase">
+                      Số người
+                    </label>
                     <input
                       type="number"
-                      className="w-full px-4 py-2 border rounded-xl"
+                      className="w-full mt-1.5 px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                       value={priceForm.people_count}
                       onChange={(e) =>
                         setPriceForm({
@@ -416,10 +461,12 @@ export default function RoomDetail() {
                   </div>
 
                   <div>
-                    <label className="text-sm text-slate-600">Giá / người</label>
+                    <label className="text-xs font-semibold text-slate-500 uppercase">
+                      Giá / người
+                    </label>
                     <input
                       type="number"
-                      className="w-full px-4 py-2 border rounded-xl"
+                      className="w-full mt-1.5 px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                       value={priceForm.water_price_per_person}
                       onChange={(e) =>
                         setPriceForm({
@@ -429,99 +476,173 @@ export default function RoomDetail() {
                       }
                     />
                   </div>
-                </>
+                </div>
               )}
 
-              <button
-                onClick={savePrice}
-                className="w-full bg-indigo-500 text-white py-2 rounded-xl"
-              >
-                Lưu giá
-              </button>
-            </div>
-          )}
-          </div>
-
-          <div className="bg-white border rounded-2xl shadow-sm hover:shadow-md transition p-6 space-y-4">
-            <h3 className="font-semibold text-lg">👤 Người thuê</h3>
-
-            {room.tenant ? (
-              <div className="space-y-1 text-slate-700">
-                <p>{room.tenant.name}</p>
-                <p>{room.tenant.email}</p>
-                <p>{room.tenant.phone}</p>
+              <div className="flex gap-2 pt-2">
                 <button
-                  onClick={removeTenant}
-                  className="mt-4 w-full bg-rose-100 text-rose-600 py-2 rounded-xl hover:bg-rose-200">
-                  Trả phòng
+                  onClick={savePrice}
+                  className="flex-1 bg-indigo-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-indigo-700 transition"
+                >
+                  Cập nhật giá
+                </button>
+                <button
+                  onClick={() => setEditingPrice(false)}
+                  className="flex-1 border border-slate-200 text-slate-600 text-sm font-medium py-2.5 rounded-lg hover:bg-slate-50 transition"
+                >
+                  Hủy bỏ
                 </button>
               </div>
-            ) : (
-              <>
-                {!isCreatingNewTenant ? (
-                  <div className="space-y-5">
-                    <div>
-                      <p className="text-sm text-slate-500 mb-2">Đã có tài khoản</p>
-                      <div className="flex gap-2">
-                        <input className="flex-1 px-3 py-2 border rounded-xl"
-                          placeholder="Email người thuê"
-                          value={email}
-                          onChange={(e)=>setEmail(e.target.value)}/>
-                        <button onClick={handleCheckEmail}
-                          className="px-4 py-2 border rounded-xl">Tìm</button>
-                      </div>
-
-                      {error && <p className="text-sm text-rose-500 mt-1">{error}</p>}
-
-                      {foundTenant && (
-                        <div className="mt-3 bg-indigo-50 p-3 rounded-xl text-sm">
-                          <p>{foundTenant.name}</p>
-                          <p>{foundTenant.email}</p>
-                          <p>{foundTenant.phone}</p>
-                          <button
-                            onClick={handleAssignTenant}
-                            className="mt-2 w-full bg-indigo-500 text-white py-1.5 rounded-xl">
-                            Gán phòng
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="border-t pt-4">
-                      <p className="text-sm text-slate-500 mb-2">Chưa có tài khoản</p>
-                      <button
-                        onClick={()=>setIsCreatingNewTenant(true)}
-                        className="w-full border py-2 rounded-xl">
-                        Tạo người thuê mới
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {["name","email","phone"].map(k=>(
-                      <input key={k} className="w-full px-4 py-2 border rounded-xl"
-                        placeholder={k==="name"?"Tên":k==="email"?"Email":"SĐT"}
-                        value={newTenantForm[k]}
-                        onChange={(e)=>setNewTenantForm({...newTenantForm,[k]:e.target.value})}/>
-                    ))}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleCreateAndAssignTenant}
-                        className="flex-1 bg-indigo-500 text-white py-2 rounded-xl">
-                        Tạo & Gán
-                      </button>
-                      <button
-                        onClick={()=>setIsCreatingNewTenant(false)}
-                        className="flex-1 border py-2 rounded-xl">
-                        Hủy
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+            </div>
+          )}
         </div>
+
+        {/* CỘT 2: NGƯỜI THUÊ */}
+        <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm p-8 space-y-6">
+          <div className="border-b border-slate-100 pb-4">
+            <h3 className="font-bold text-slate-800">Thông tin người thuê</h3>
+          </div>
+
+          {room.tenant ? (
+            <div className="space-y-4">
+              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-3">
+                <div>
+                  <p className="text-xs font-semibold text-slate-400 uppercase">
+                    Họ và tên
+                  </p>
+                  <p className="text-base font-semibold text-slate-800 mt-0.5">
+                    {room.tenant.name}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-400 uppercase">
+                    Email
+                  </p>
+                  <p className="text-sm font-medium text-slate-600 mt-0.5">
+                    {room.tenant.email}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-400 uppercase">
+                    Số điện thoại
+                  </p>
+                  <p className="text-sm font-medium text-slate-600 mt-0.5">
+                    {room.tenant.phone}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={removeTenant}
+                className="w-full bg-white border border-rose-200 text-rose-600 text-sm font-semibold py-3 rounded-lg hover:bg-rose-50 transition"
+              >
+                Yêu cầu trả phòng
+              </button>
+            </div>
+          ) : (
+            <>
+              {!isCreatingNewTenant ? (
+                <div className="space-y-6">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 uppercase block mb-2">
+                      Đã có tài khoản hệ thống
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        className="flex-1 px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                        placeholder="Nhập email cần tìm"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                      <button
+                        onClick={handleCheckEmail}
+                        className="px-5 py-2.5 bg-slate-800 text-white text-sm font-medium rounded-lg hover:bg-slate-700 transition"
+                      >
+                        Tìm
+                      </button>
+                    </div>
+
+                    {error && (
+                      <p className="text-xs font-medium text-rose-500 mt-1.5">
+                        {error}
+                      </p>
+                    )}
+
+                    {foundTenant && (
+                      <div className="mt-4 bg-emerald-50 p-4 rounded-xl border border-emerald-100 space-y-2">
+                        <p className="text-sm font-semibold text-slate-800">
+                          {foundTenant.name}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {foundTenant.email} • {foundTenant.phone}
+                        </p>
+                        <button
+                          onClick={handleAssignTenant}
+                          className="mt-2 w-full bg-emerald-600 text-white text-xs font-medium py-2 rounded-lg hover:bg-emerald-700 transition"
+                        >
+                          Xác nhận gán phòng
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t border-slate-100 pt-5">
+                    <label className="text-xs font-semibold text-slate-500 uppercase block mb-2">
+                      Người thuê chưa có tài khoản
+                    </label>
+                    <button
+                      onClick={() => setIsCreatingNewTenant(true)}
+                      className="w-full bg-indigo-600 text-white text-sm font-semibold py-3 rounded-lg hover:bg-indigo-700 transition"
+                    >
+                      Tạo hồ sơ người thuê mới
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <label className="text-xs font-semibold text-slate-500 uppercase">
+                    Khởi tạo hồ sơ mới
+                    </label>
+                  {["name", "email", "phone"].map((k) => (
+                    <input
+                      key={k}
+                      className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                      placeholder={
+                        k === "name"
+                          ? "Họ tên người thuê"
+                          : k === "email"
+                          ? "Địa chỉ Email"
+                          : "Số điện thoại"
+                      }
+                      value={newTenantForm[k]}
+                      onChange={(e) =>
+                        setNewTenantForm({
+                          ...newTenantForm,
+                          [k]: e.target.value,
+                        })
+                      }
+                    />
+                  ))}
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      onClick={handleCreateAndAssignTenant}
+                      className="flex-1 bg-indigo-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-indigo-700 transition"
+                    >
+                      Khởi tạo & Gán
+                    </button>
+                    <button
+                      onClick={() => setIsCreatingNewTenant(false)}
+                      className="flex-1 border border-slate-200 text-slate-600 text-sm font-medium py-2.5 rounded-lg hover:bg-slate-50 transition"
+                    >
+                      Hủy
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+        
       </div>
     </div>
   );

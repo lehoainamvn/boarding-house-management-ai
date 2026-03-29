@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Plus, Edit, Trash2, User, Mail, Phone, Lock } from "lucide-react";
+import { Plus, Edit, Trash2, User, Mail, Phone, Lock, Search, X } from "lucide-react";
 
 export default function Tenants() {
   const [tenants, setTenants] = useState([]);
@@ -171,20 +171,20 @@ export default function Tenants() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-400">
-        Đang tải danh sách...
+      <div className="flex justify-center items-center h-[60vh]">
+        <div className="animate-spin rounded-full h-10 w-10 border-4 border-slate-200 border-t-indigo-600" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* HEADER */}
+    <div className="max-w-6xl mx-auto px-6 py-12 space-y-8">
+      {/* HEADER ĐỒNG BỘ */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Quản lý khách thuê</h1>
-          <p className="text-sm text-slate-500">
-            Quản lý danh sách khách thuê của bạn
+          <p className="text-sm text-slate-500 mt-0.5">
+            Quản lý thông tin và tài khoản của cư dân trong hệ thống
           </p>
         </div>
         <button
@@ -192,97 +192,97 @@ export default function Tenants() {
             setForm(emptyForm);
             setShowAddModal(true);
           }}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold"
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition shadow-sm"
         >
           <Plus size={16} />
-          Thêm khách
+          Thêm khách mới
         </button>
       </div>
 
-      {/* SEARCH */}
-      <div className="flex gap-4">
+      {/* THANH TÌM KIẾM CHUYÊN NGHIỆP */}
+      <div className="relative max-w-md">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Search size={16} className="text-slate-400" />
+        </div>
         <input
           type="text"
           placeholder="Tìm kiếm theo tên hoặc email..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 px-4 py-2 border rounded-lg bg-white"
+          className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
         />
       </div>
 
-      {/* TENANT LIST */}
-      {filteredTenants.length === 0 ? (
-        <div className="text-center py-12 text-slate-500">
-          <User size={48} className="mx-auto mb-4 text-slate-300" />
-          <p>Không có khách thuê nào</p>
-        </div>
-      ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTenants.map((t) => (
-            <div
-              key={t.id}
-              className="bg-white border rounded-2xl p-6 shadow-sm hover:shadow-md transition"
-            >
-              {/* AVATAR */}
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-pink-500 text-white flex items-center justify-center text-xl font-bold">
-                  {t.name?.charAt(0)?.toUpperCase()}
-                </div>
-              </div>
+      {/* DANH SÁCH BẢNG KHÁCH THUÊ */}
+      <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden">
+        {filteredTenants.length === 0 ? (
+          <div className="text-center py-16 text-slate-400">
+            <User size={48} className="mx-auto mb-4 text-slate-300" />
+            <p className="text-sm font-medium">Không tìm thấy khách thuê nào</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50 border-b border-slate-100 text-xs text-slate-500 uppercase font-semibold">
+                <tr>
+                  <th className="px-6 py-4">Khách thuê</th>
+                  <th className="px-6 py-4">Email</th>
+                  <th className="px-6 py-4">Số điện thoại</th>
+                  <th className="px-6 py-4 text-right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredTenants.map((t) => (
+                  <tr key={t.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-4 flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm font-bold">
+                        {t.name?.charAt(0)?.toUpperCase()}
+                      </div>
+                      <span className="font-semibold text-slate-700">{t.name}</span>
+                    </td>
+                    <td className="px-6 py-4 text-slate-600">{t.email || "—"}</td>
+                    <td className="px-6 py-4 text-slate-600">{t.phone}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => openEditModal(t)}
+                          className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-medium transition"
+                        >
+                          <Edit size={12} />
+                          Sửa
+                        </button>
+                        <button
+                          onClick={() => handleDelete(t.id)}
+                          className="flex items-center justify-center w-8 h-8 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
-              {/* INFO */}
-              <div className="text-center mb-4">
-                <h3 className="font-semibold text-lg text-slate-800">{t.name}</h3>
-                <div className="space-y-1 text-sm text-slate-500">
-                  <div className="flex items-center justify-center gap-2">
-                    <Mail size={14} />
-                    {t.email || "—"}
-                  </div>
-                  <div className="flex items-center justify-center gap-2">
-                    <Phone size={14} />
-                    {t.phone}
-                  </div>
-                </div>
-              </div>
-
-              {/* ACTIONS */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => openEditModal(t)}
-                  className="flex-1 flex items-center justify-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg text-sm"
-                >
-                  <Edit size={14} />
-                  Sửa
-                </button>
-                <button
-                  onClick={() => handleDelete(t.id)}
-                  className="w-10 flex items-center justify-center bg-rose-100 text-rose-600 hover:bg-rose-200 rounded-lg"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      
-
+      {/* MODALS */}
       {showAddModal && (
         <Modal
-        title="➕ Thêm khách thuê"
-        onClose={() => setShowAddModal(false)}
-        onSubmit={handleAdd}
-        form={form}
-        setForm={setForm}
-        submitText="Thêm khách"
-        isCreate={true}   // thêm dòng này
-      />
+          title="Thêm khách thuê mới"
+          onClose={() => setShowAddModal(false)}
+          onSubmit={handleAdd}
+          form={form}
+          setForm={setForm}
+          submitText="Thêm khách"
+          isCreate={true}
+        />
       )}
 
       {editingTenant && (
         <Modal
-          title="✏️ Chỉnh sửa thông tin khách thuê"
+          title="Chỉnh sửa thông tin khách"
           onClose={() => setEditingTenant(null)}
           onSubmit={handleUpdate}
           form={form}
@@ -293,69 +293,88 @@ export default function Tenants() {
     </div>
   );
 }
-function Modal({ title, onClose, onSubmit, form, setForm, isCreate }) {
+
+function Modal({ title, onClose, onSubmit, form, setForm, isCreate, submitText }) {
   return (
-    <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex justify-center items-center z-50">
+      <div className="bg-white p-6 rounded-2xl w-full max-w-md space-y-5 shadow-xl border border-slate-100">
+        
+        {/* Modal Header */}
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-bold text-slate-800">{title}</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition">
+            <X size={20} />
+          </button>
+        </div>
 
-      <div className="bg-white p-6 rounded-2xl w-full max-w-md space-y-4">
+        {/* Form Inputs */}
+        <div className="space-y-4">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <User size={16} className="text-slate-400" />
+            </div>
+            <input
+              placeholder="Họ và tên"
+              className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+          </div>
 
-        <h3 className="text-lg font-semibold">{title}</h3>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Mail size={16} className="text-slate-400" />
+            </div>
+            <input
+              placeholder="Địa chỉ Email"
+              className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+          </div>
 
-        <input
-          placeholder="Tên"
-          className="w-full border px-3 py-2 rounded-lg"
-          value={form.name}
-          onChange={(e) =>
-            setForm({ ...form, name: e.target.value })
-          }
-        />
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Phone size={16} className="text-slate-400" />
+            </div>
+            <input
+              placeholder="Số điện thoại"
+              className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            />
+          </div>
 
-        <input
-          placeholder="Email"
-          className="w-full border px-3 py-2 rounded-lg"
-          value={form.email}
-          onChange={(e) =>
-            setForm({ ...form, email: e.target.value })
-          }
-        />
+          {isCreate && (
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Lock size={16} className="text-slate-400" />
+              </div>
+              <input
+                type="password"
+                placeholder="Mật khẩu tài khoản"
+                className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+              />
+            </div>
+          )}
+        </div>
 
-        <input
-          placeholder="Số điện thoại"
-          className="w-full border px-3 py-2 rounded-lg"
-          value={form.phone}
-          onChange={(e) =>
-            setForm({ ...form, phone: e.target.value })
-          }
-        />
-
-        {isCreate && (
-          <input
-            type="password"
-            placeholder="Mật khẩu"
-            className="w-full border px-3 py-2 rounded-lg"
-            value={form.password}
-            onChange={(e) =>
-              setForm({ ...form, password: e.target.value })
-            }
-          />
-        )}
-
+        {/* Modal Footer */}
         <div className="flex justify-end gap-3 pt-2">
-
           <button
             onClick={onClose}
-            className="px-4 py-2 border rounded-lg"
+            className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
           >
-            Hủy
+            Hủy bỏ
           </button>
-
           <button
             onClick={onSubmit}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg"
+            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition shadow-sm"
           >
-            Lưu
+            {submitText || "Lưu"}
           </button>
-
         </div>
       </div>
     </div>

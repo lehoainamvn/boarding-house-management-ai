@@ -30,6 +30,7 @@ import TenantInvoiceDetail from "./pages/tenant/TenantInvoiceDetail";
 import TenantStatistics from "./pages/tenant/TenantStatistics";
 import TenantProfile from "./pages/tenant/TenantProfile";
 import TenantChangePassword from "./pages/tenant/TenantChangePassword";
+import PaymentReturn from "./pages/tenant/PaymentReturn";
 /* LAYOUT */
 import DashboardLayout from "./layouts/DashboardLayout";
 import TenantLayout from "./layouts/TenantLayout";
@@ -85,6 +86,7 @@ export default function App() {
         <Route path="invoices" element={<TenantInvoices />} />
         <Route path="contact" element={<TenantContact />} />
         <Route path="invoices/:id" element={<TenantInvoiceDetail />} />
+        <Route path="payment-return" element={<PaymentReturn />} />
         <Route path="statistics" element={<TenantStatistics />} />
         <Route path="messages" element={<TenantContact />} />
         <Route path="profile" element={<TenantProfile />} />
