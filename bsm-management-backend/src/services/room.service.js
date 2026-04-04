@@ -6,7 +6,7 @@ import {
   getCurrentTenantByRoom,
   deleteRoom
 } from "../repositories/room.repo.js";
-
+import { createNotification } from "./notification.service.js";
 import sql, { poolPromise } from "../config/db.js";
 
 export async function deleteRoomService(ownerId, roomId) {
@@ -37,11 +37,44 @@ export async function createRoomService(ownerId, data) {
   }
 
   const pool = await poolPromise;
+  const houseId = Number(data.house_id);
 
-  // Kiểm tra tên phòng trùng trong cùng nhà
+  // 1. Lấy giới hạn số phòng (total_rooms) từ bảng houses
+  const houseResult = await pool.request()
+    .input("house_id", sql.Int, houseId)
+    .input("owner_id", sql.Int, ownerId)
+    .query(`
+      SELECT total_rooms 
+      FROM houses 
+      WHERE id = @house_id AND owner_id = @owner_id
+    `);
+
+  if (houseResult.recordset.length === 0) {
+    throw new Error("Không tìm thấy thông tin nhà trọ");
+  }
+
+  const limit = houseResult.recordset[0].total_rooms;
+
+  // 2. Đếm số lượng phòng hiện tại của nhà này
+  const currentCountResult = await pool.request()
+    .input("house_id", sql.Int, houseId)
+    .query(`
+      SELECT COUNT(*) as count 
+      FROM rooms 
+      WHERE house_id = @house_id
+    `);
+
+  const currentCount = currentCountResult.recordset[0].count;
+
+  // 3. Chặn nếu đã đạt hoặc vượt quá giới hạn
+  if (currentCount >= limit) {
+    throw new Error(`Nhà này đã đạt giới hạn tối đa ${limit} phòng. Không thể tạo thêm.`);
+  }
+
+  // 4. Kiểm tra trùng tên phòng (giữ nguyên logic cũ của bạn)
   const existingRoom = await pool.request()
     .input("owner_id", sql.Int, ownerId)
-    .input("house_id", sql.Int, Number(data.house_id))
+    .input("house_id", sql.Int, houseId)
     .input("room_name", sql.NVarChar(50), data.room_name.trim())
     .query(`
       SELECT COUNT(*) as count
@@ -55,6 +88,7 @@ export async function createRoomService(ownerId, data) {
     throw new Error("Tên phòng đã tồn tại trong nhà này");
   }
 
+  // 5. Nếu mọi thứ hợp lệ, tiến hành tạo phòng
   return createRoom(ownerId, data);
 }
 /* =========================
@@ -85,7 +119,47 @@ export async function getRoomDetailService(ownerId, roomId) {
    UPDATE PHÒNG
 ========================= */
 export async function updateRoomService(ownerId, roomId, data) {
-  return updateRoom(ownerId, roomId, data);
+  const pool = await poolPromise;
+  
+  // 1. Lấy thông tin giá cũ trước khi update (để so sánh hoặc chỉ để lấy thông tin phòng)
+  const oldRoomRes = await pool.request()
+    .input("room_id", sql.Int, roomId)
+    .query(`SELECT room_name, room_price, electric_price, water_price FROM rooms WHERE id = @room_id`);
+    
+  const oldRoom = oldRoomRes.recordset[0];
+
+  // 2. Tiến hành update phòng (giữ nguyên hàm repo cũ của bạn)
+  const result = await updateRoom(ownerId, roomId, data);
+
+  // 3. Tìm xem phòng này có người đang thuê không
+  const tenantRes = await pool.request()
+    .input("room_id", sql.Int, roomId)
+    .query(`
+      SELECT TOP 1 tenant_id 
+      FROM tenant_rooms 
+      WHERE room_id = @room_id AND end_date IS NULL
+    `);
+
+  // 4. Nếu có người thuê, tiến hành tạo thông báo cho họ
+  if (tenantRes.recordset.length > 0) {
+    const tenantId = tenantRes.recordset[0].tenant_id;
+    
+    // Tạo nội dung thông báo linh hoạt dựa trên dữ liệu gửi lên
+    let changes = [];
+    if (data.room_price && Number(data.room_price) !== Number(oldRoom.room_price)) changes.push(`giá phòng`);
+    if (data.electric_price && Number(data.electric_price) !== Number(oldRoom.electric_price)) changes.push(`giá điện`);
+    if (data.water_price && Number(data.water_price) !== Number(oldRoom.water_price)) changes.push(`giá nước`);
+
+    if (changes.length > 0) {
+      await createNotification({
+        user_id: tenantId,
+        title: "Cập nhật giá dịch vụ",
+        content: `Chủ trọ vừa cập nhật ${changes.join(", ")} cho phòng ${oldRoom.room_name} của bạn.`
+      });
+    }
+  }
+
+  return result;
 }
 
 import { assignTenantToRoomRepo } from "../repositories/room.repo.js";

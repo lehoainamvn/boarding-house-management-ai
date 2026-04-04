@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
 import { getProfile, updateProfile } from "../../api/profile.api";
 import { User, Mail, Phone, Save, ShieldCheck, BadgeCheck } from "lucide-react";
 
 export default function Profile() {
   const [profile, setProfile] = useState(null);
-
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -14,6 +13,9 @@ export default function Profile() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  
+  // Ref để chặn việc gọi API 2 lần trong Strict Mode
+  const isFetched = useRef(false);
 
   /* ================= ROLE MAP ================= */
   const roleMap = {
@@ -32,6 +34,7 @@ export default function Profile() {
   /* ================= LOAD PROFILE ================= */
   async function fetchProfile() {
     try {
+      // Sử dụng toast.promise để thông báo trạng thái tải dữ liệu
       const data = await toast.promise(
         getProfile(),
         {
@@ -42,7 +45,6 @@ export default function Profile() {
       );
 
       setProfile(data);
-
       setForm({
         name: data.name || "",
         email: data.email || "",
@@ -51,13 +53,17 @@ export default function Profile() {
 
       localStorage.setItem("user", JSON.stringify(data));
     } catch (error) {
-      console.error(error);
+      console.error("Fetch profile error:", error);
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
+    // Nếu đã gọi API rồi thì không gọi lại nữa (Fix lỗi double-toast)
+    if (isFetched.current) return;
+    isFetched.current = true;
+
     fetchProfile();
   }, []);
 
@@ -94,7 +100,7 @@ export default function Profile() {
         {
           loading: "Đang cập nhật thông tin...",
           success: "Cập nhật thông tin thành công",
-          error: "Cập nhật thất bại"
+          error: (err) => err.message || "Cập nhật thất bại"
         }
       );
 
@@ -107,27 +113,27 @@ export default function Profile() {
       setProfile(newProfile);
       localStorage.setItem("user", JSON.stringify(newProfile));
 
+      // Gửi event để các component khác (như Sidebar/Header) cập nhật lại tên hiển thị
       window.dispatchEvent(new Event("user-updated"));
     } catch (error) {
-      console.error(error);
+      console.error("Update profile error:", error);
     } finally {
       setSaving(false);
     }
   }
 
-  /* ================= LOADING ================= */
+  /* ================= LOADING UI ================= */
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-tr from-slate-50 to-indigo-50/30 flex items-center justify-center">
         <div className="text-center space-y-3">
           <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-sm font-semibold text-slate-500">Đang tải thông tin...</p>
+          <p className="text-sm font-semibold text-slate-500">Đang tải hồ sơ...</p>
         </div>
       </div>
     );
   }
 
-  /* ================= UI ================= */
   return (
     <div className="min-h-screen bg-gradient-to-tr from-slate-50 to-indigo-50/30 p-4 md:p-8 font-sans">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -138,7 +144,7 @@ export default function Profile() {
             Hồ sơ cá nhân
           </h1>
           <p className="text-xs font-medium text-slate-500 mt-0.5">
-            Quản lý và cập nhật thông tin tài khoản của bạn
+            Quản lý và cập nhật thông tin tài khoản cá nhân
           </p>
         </div>
 
@@ -146,9 +152,8 @@ export default function Profile() {
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-12">
 
-            {/* LEFT: PROFILE SIDEBAR */}
+            {/* LEFT SIDEBAR: AVATAR & ROLE */}
             <div className="md:col-span-4 bg-slate-50/80 border-b md:border-b-0 md:border-r border-slate-200/60 p-8 flex flex-col items-center justify-center text-center">
-              
               <div className="relative mb-4">
                 <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/20 flex items-center justify-center text-white text-3xl font-bold">
                   {profile?.name ? profile.name.charAt(0).toUpperCase() : "U"}
@@ -172,11 +177,11 @@ export default function Profile() {
               </span>
             </div>
 
-            {/* RIGHT: EDIT FORM */}
+            {/* RIGHT SIDE: FORM EDIT */}
             <div className="md:col-span-8 p-8">
               <form onSubmit={handleSubmit} className="space-y-5">
 
-                {/* NAME */}
+                {/* NAME INPUT */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                     Họ và tên
@@ -190,13 +195,13 @@ export default function Profile() {
                       value={form.name}
                       onChange={handleChange}
                       disabled={saving}
-                      placeholder="Nhập họ và tên"
-                      className="w-full pl-11 pr-4 py-3 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:bg-slate-50 disabled:text-slate-400"
+                      placeholder="Nhập họ và tên của bạn"
+                      className="w-full pl-11 pr-4 py-3 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:bg-slate-50"
                     />
                   </div>
                 </div>
 
-                {/* EMAIL */}
+                {/* EMAIL INPUT (READ-ONLY) */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                     Địa chỉ Email
@@ -208,14 +213,13 @@ export default function Profile() {
                     <input
                       value={form.email}
                       disabled
-                      placeholder="email@example.com"
-                      className="w-full pl-11 pr-4 py-3 text-sm bg-slate-50/80 border border-slate-200 rounded-xl cursor-not-allowed text-slate-400 focus:outline-none"
+                      className="w-full pl-11 pr-4 py-3 text-sm bg-slate-50/80 border border-slate-200 rounded-xl cursor-not-allowed text-slate-400"
                     />
                   </div>
-                  <p className="text-[10px] text-slate-400 font-medium ml-1">Email là thông tin định danh và không thể thay đổi.</p>
+                  <p className="text-[10px] text-slate-400 font-medium ml-1">Email được dùng để đăng nhập và không thể thay đổi.</p>
                 </div>
 
-                {/* PHONE */}
+                {/* PHONE INPUT */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                     Số điện thoại
@@ -230,24 +234,24 @@ export default function Profile() {
                       onChange={handleChange}
                       disabled={saving}
                       placeholder="090xxxxxxx"
-                      className="w-full pl-11 pr-4 py-3 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:bg-slate-50 disabled:text-slate-400"
+                      className="w-full pl-11 pr-4 py-3 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                     />
                   </div>
                 </div>
 
-                {/* ACTION BUTTON */}
+                {/* SUBMIT BUTTON */}
                 <div className="flex justify-end pt-2">
                   <button
                     type="submit"
                     disabled={saving}
-                    className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold disabled:opacity-60 flex items-center gap-2 shadow-sm shadow-indigo-500/10 transition-all disabled:cursor-not-allowed"
+                    className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold flex items-center gap-2 shadow-sm shadow-indigo-500/10 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {saving ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     ) : (
                       <Save size={16} />
                     )}
-                    {saving ? "Đang xử lý..." : "Lưu thay đổi"}
+                    {saving ? "Đang lưu..." : "Lưu thay đổi"}
                   </button>
                 </div>
 

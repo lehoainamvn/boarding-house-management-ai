@@ -7,7 +7,7 @@ USE BSM_Management;
 GO
 
 /* =========================
-   USERS (CHỦ TRỌ + NGƯỜI THUÊ)
+   USERS
 ========================= */
 CREATE TABLE users (
     id INT IDENTITY(1,1) PRIMARY KEY,
@@ -20,7 +20,7 @@ CREATE TABLE users (
 );
 
 /* =========================
-   HOUSES (NHÀ TRỌ / TÒA NHÀ)
+   HOUSES
 ========================= */
 CREATE TABLE houses (
     id INT IDENTITY(1,1) PRIMARY KEY,
@@ -34,26 +34,24 @@ CREATE TABLE houses (
 );
 
 /* =========================
-   ROOMS (PHÒNG TRỌ)
+   ROOMS
 ========================= */
 CREATE TABLE rooms (
     id INT IDENTITY(1,1) PRIMARY KEY,
     house_id INT NOT NULL,
     owner_id INT NOT NULL,
-
     room_name NVARCHAR(50) NOT NULL,
 
     room_price DECIMAL(12,2) DEFAULT 0,
     electric_price DECIMAL(12,2) DEFAULT 0,
 
-    /* ===== WATER CONFIG ===== */
     water_type NVARCHAR(10)
         CHECK (water_type IN ('METER', 'PERSON'))
         DEFAULT 'METER',
 
-    water_price DECIMAL(12,2) DEFAULT 0,          -- giá / m3
-    water_price_per_person DECIMAL(12,2) DEFAULT 0, -- giá / người
-    people_count INT DEFAULT 1,                   -- số người (nếu PERSON)
+    water_price DECIMAL(12,2) DEFAULT 0,
+    water_price_per_person DECIMAL(12,2) DEFAULT 0,
+    people_count INT DEFAULT 1,
 
     status NVARCHAR(20)
         CHECK (status IN ('EMPTY', 'OCCUPIED'))
@@ -66,15 +64,13 @@ CREATE TABLE rooms (
     FOREIGN KEY (owner_id) REFERENCES users(id)
 );
 
-
 /* =========================
-   TENANT_ROOMS (AI Ở PHÒNG NÀO)
+   TENANT_ROOMS
 ========================= */
 CREATE TABLE tenant_rooms (
     id INT IDENTITY(1,1) PRIMARY KEY,
     room_id INT NOT NULL,
     tenant_id INT NOT NULL,
-
     start_date DATE NOT NULL,
     end_date DATE NULL,
 
@@ -83,13 +79,13 @@ CREATE TABLE tenant_rooms (
 );
 
 /* =========================
-   METER_READINGS (CHỈ SỐ ĐIỆN NƯỚC)
+   METER_READINGS
 ========================= */
 CREATE TABLE meter_readings (
     id INT IDENTITY(1,1) PRIMARY KEY,
     room_id INT NOT NULL,
-
     month NVARCHAR(7) NOT NULL, -- YYYY-MM
+
     electric_old INT NOT NULL,
     electric_new INT NOT NULL,
     water_old INT NOT NULL,
@@ -97,11 +93,14 @@ CREATE TABLE meter_readings (
 
     created_at DATETIME DEFAULT GETDATE(),
 
+    CHECK (electric_new >= electric_old),
+    CHECK (water_new >= water_old),
+
     FOREIGN KEY (room_id) REFERENCES rooms(id)
 );
 
 /* =========================
-   INVOICES (HÓA ĐƠN)
+   INVOICES
 ========================= */
 CREATE TABLE invoices (
     id INT IDENTITY(1,1) PRIMARY KEY,
@@ -110,12 +109,15 @@ CREATE TABLE invoices (
 
     month NVARCHAR(7) NOT NULL,
     room_price DECIMAL(12,2) NOT NULL,
+
     electric_used INT NOT NULL,
     water_used INT NOT NULL,
+
     electric_cost DECIMAL(12,2) NOT NULL,
     water_cost DECIMAL(12,2) NOT NULL,
 
     total_amount DECIMAL(12,2) NOT NULL,
+
     status NVARCHAR(20)
         CHECK (status IN ('UNPAID', 'PAID'))
         DEFAULT 'UNPAID',
@@ -123,28 +125,14 @@ CREATE TABLE invoices (
     created_at DATETIME DEFAULT GETDATE(),
     paid_at DATETIME NULL,
 
+    UNIQUE (room_id, month),
+
     FOREIGN KEY (room_id) REFERENCES rooms(id),
     FOREIGN KEY (tenant_id) REFERENCES users(id)
 );
 
 /* =========================
-   NOTIFICATIONS (THÔNG BÁO)
-========================= */
-CREATE TABLE notifications (
-    id INT IDENTITY(1,1) PRIMARY KEY,
-    user_id INT NOT NULL,
-
-    title NVARCHAR(100),
-    content NVARCHAR(255),
-    is_read BIT DEFAULT 0,
-
-    created_at DATETIME DEFAULT GETDATE(),
-
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
-/* =========================
-   PAYMENTS (THANH TOÁN)
+   PAYMENTS
 ========================= */
 CREATE TABLE payments (
     id INT IDENTITY(1,1) PRIMARY KEY,
@@ -152,11 +140,65 @@ CREATE TABLE payments (
 
     amount DECIMAL(12,2) NOT NULL,
     method NVARCHAR(50),
+
+    vnp_TransactionNo NVARCHAR(50),
+    vnp_ResponseCode NVARCHAR(10),
+    vnp_OrderInfo NVARCHAR(255),
+
     paid_at DATETIME DEFAULT GETDATE(),
 
     FOREIGN KEY (invoice_id) REFERENCES invoices(id)
 );
 
+/* =========================
+   NOTIFICATIONS
+========================= */
+CREATE TABLE notifications (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    user_id INT NOT NULL,
+
+    title NVARCHAR(100),
+    content NVARCHAR(255),
+
+    is_read BIT DEFAULT 0,
+    created_at DATETIME DEFAULT GETDATE(),
+
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+/* =========================
+   MESSAGES (CHAT USER)
+========================= */
+CREATE TABLE messages (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    room_id INT NOT NULL,
+    sender_id INT NOT NULL,
+    receiver_id INT NOT NULL,
+
+    content NVARCHAR(1000) NOT NULL,
+
+    is_read BIT DEFAULT 0,
+    created_at DATETIME DEFAULT GETDATE(),
+
+    FOREIGN KEY (room_id) REFERENCES rooms(id),
+    FOREIGN KEY (sender_id) REFERENCES users(id),
+    FOREIGN KEY (receiver_id) REFERENCES users(id)
+);
+
+/* =========================
+   CHAT AI (OPTIONAL)
+========================= */
+CREATE TABLE ChatMessages (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    user_id INT,
+    role NVARCHAR(20),
+    message NVARCHAR(MAX),
+    created_at DATETIME DEFAULT GETDATE()
+);
+
+/* =========================
+   OTP
+========================= */
 CREATE TABLE Otps (
     id INT IDENTITY(1,1) PRIMARY KEY,
     email NVARCHAR(255) NOT NULL,
@@ -164,3 +206,18 @@ CREATE TABLE Otps (
     created_at DATETIME DEFAULT GETDATE()
 );
 
+/* =========================
+   SETTINGS
+========================= */
+CREATE TABLE settings (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    owner_id INT NULL,
+
+    billing_day INT DEFAULT 5,
+    default_electric_price INT DEFAULT 0,
+    default_water_price INT DEFAULT 0,
+	default_room_price DECIMAL(12,2) DEFAULT 0;
+    created_at DATETIME DEFAULT GETDATE(),
+
+    FOREIGN KEY (owner_id) REFERENCES users(id)
+);

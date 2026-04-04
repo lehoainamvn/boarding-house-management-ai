@@ -4,6 +4,7 @@ import { poolPromise } from "../config/db.js";
 import { createMeterReading } from "../repositories/meter.repo.js";
 import { createInvoiceRepo } from "../repositories/invoice.repo.js";
 import { getMeterHistoryRepo } from "../repositories/meter.repo.js";
+import { createNotification } from "./notification.service.js"; // Đảm bảo file này nằm cùng thư mục services
 
 export function getMeterHistoryService(ownerId, year, month, roomId) {
   return getMeterHistoryRepo(ownerId, year, month, roomId);
@@ -40,20 +41,13 @@ export async function inputMeterAndCreateInvoice(roomId, payload) {
   const tenantId = tenantRes.recordset[0].tenant_id;
 
   // 3️⃣ Tính toán
-  const electric_used =
-    payload.electric_new - payload.electric_old;
+  const electric_used = payload.electric_new - payload.electric_old;
+  const water_used = payload.water_new - payload.water_old;
 
-  const water_used =
-    payload.water_new - payload.water_old;
+  const electric_cost = electric_used * room.electric_price;
+  const water_cost = water_used * room.water_price;
 
-  const electric_cost =
-    electric_used * room.electric_price;
-
-  const water_cost =
-    water_used * room.water_price;
-
-  const total_amount =
-    room.room_price + electric_cost + water_cost;
+  const total_amount = room.room_price + electric_cost + water_cost;
 
   // 4️⃣ Lưu chỉ số điện nước
   await createMeterReading(roomId, payload);
@@ -70,5 +64,23 @@ export async function inputMeterAndCreateInvoice(roomId, payload) {
     water_cost,
     total_amount
   });
+
+  // 6️⃣ Tạo thông báo hóa đơn mới cho người thuê
+  try {
+    const formattedMoney = new Intl.NumberFormat('vi-VN', { 
+      style: 'currency', 
+      currency: 'VND' 
+    }).format(total_amount);
+
+    // Đã có await ở đây để xử lý đồng bộ chính xác
+    await createNotification({
+      user_id: tenantId,
+      title: "Hóa đơn mới",
+      content: `Hóa đơn tháng ${payload.month} của phòng ${room.room_name} đã được tạo. Tổng tiền: ${formattedMoney}.`
+    });
+
+    console.log("🔔 Đã xử lý thông báo thành công cho tenant:", tenantId);
+  } catch (error) {
+    console.error("❌ Lỗi khi thực thi tạo thông báo:", error);
+  }
 }
-  

@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Bar } from "react-chartjs-2";
+import ReactMarkdown from "react-markdown"; 
+import remarkGfm from "remark-gfm"; // <-- ĐÃ THÊM: Import plugin để vẽ bảng
 
 import {
   Chart as ChartJS,
@@ -11,7 +13,7 @@ import {
   Legend
 } from "chart.js";
 
-import { Send, Bot, User, X, Sparkles } from "lucide-react";
+import { Send, Bot, X, Sparkles } from "lucide-react";
 
 ChartJS.register(
   CategoryScale,
@@ -24,13 +26,13 @@ ChartJS.register(
 
 export default function AIChatBox(){
 
-  const [open,setOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
-  const [messages,setMessages] = useState([
+  const [messages, setMessages] = useState([
     {
-      role:"assistant",
-      content:"Xin chào 👋 Tôi là trợ lý AI của BSM. Tôi có thể giúp gì cho bạn hôm nay?",
-      suggestions:[
+      role: "assistant",
+      content: "Xin chào 👋 Tôi là trợ lý AI của BSM. Tôi có thể giúp gì cho bạn hôm nay?",
+      suggestions: [
         "Doanh thu tháng này",
         "Phòng nào chưa thanh toán",
         "Tổng số phòng đang thuê"
@@ -38,8 +40,8 @@ export default function AIChatBox(){
     }
   ]);
 
-  const [input,setInput] = useState("");
-  const [loading,setLoading] = useState(false);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const messagesEndRef = useRef(null);
 
@@ -47,49 +49,50 @@ export default function AIChatBox(){
   const userLocal = JSON.parse(localStorage.getItem("user")) || JSON.parse(localStorage.getItem("profile"));
   const userName = userLocal?.name || "User";
 
-  useEffect(()=>{
-    messagesEndRef.current?.scrollIntoView({behavior:"smooth"});
-  },[messages]);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-  const sendMessage = async (text)=>{
+  const sendMessage = async (text) => {
 
     const question = text || input;
 
-    if(!question.trim()) return;
+    if (!question.trim()) return;
 
     const newMessages = [
       ...messages,
-      { role:"user",content:question }
+      { role: "user", content: question }
     ];
 
     setMessages(newMessages);
     setInput("");
     setLoading(true);
 
-    try{
+    try {
 
-    const token = localStorage.getItem("token"); 
+      const token = localStorage.getItem("token"); 
 
-    const res = await fetch("http://localhost:5000/api/ai/chat",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "Authorization": "Bearer " + token 
-      },
-      body:JSON.stringify({
-        question
-      })
-    });
+      const res = await fetch("http://localhost:5000/api/ai/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token 
+        },
+          body: JSON.stringify({
+          question: question,
+          history: messages // <-- GỬI KÈM LỊCH SỬ LÊN ĐÂY
+        })
+      });
 
       const data = await res.json();
 
       const aiMessage = {
-        role:"assistant",
-        content:data.answer,
-        type:data.type,
-        labels:data.labels,
-        values:data.values,
-        suggestions:data.suggestions || []
+        role: "assistant",
+        content: data.answer,
+        type: data.type,
+        labels: data.labels,
+        values: data.values,
+        suggestions: data.suggestions || []
       };
 
       setMessages([
@@ -97,11 +100,11 @@ export default function AIChatBox(){
         aiMessage
       ]);
 
-    }catch(err){
+    } catch (err) {
 
       setMessages([
         ...newMessages,
-        { role:"assistant",content:"⚠️ AI server đang gặp sự cố. Bạn vui lòng thử lại sau nhé!" }
+        { role: "assistant", content: "⚠️ AI server đang gặp sự cố. Bạn vui lòng thử lại sau nhé!" }
       ]);
 
     }
@@ -110,7 +113,7 @@ export default function AIChatBox(){
 
   };
 
-  return(
+  return (
 
     <>
 
@@ -118,7 +121,7 @@ export default function AIChatBox(){
 
       {!open && (
         <button
-          onClick={()=>setOpen(true)}
+          onClick={() => setOpen(true)}
           className="fixed bottom-6 right-6 bg-gradient-to-tr from-indigo-600 to-indigo-700 text-white w-14 h-14 rounded-2xl shadow-lg shadow-indigo-600/30 flex items-center justify-center hover:scale-105 hover:shadow-indigo-600/40 transition-all duration-300 group"
         >
           <div className="absolute inset-0 rounded-2xl bg-indigo-600 animate-ping opacity-20 group-hover:opacity-0 transition-opacity"></div>
@@ -153,7 +156,7 @@ export default function AIChatBox(){
             </div>
 
             <button
-              onClick={()=>setOpen(false)}
+              onClick={() => setOpen(false)}
               className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-white/80 hover:text-white transition-colors"
             >
               <X size={18} />
@@ -165,16 +168,16 @@ export default function AIChatBox(){
 
           <div className="flex-1 overflow-y-auto p-5 bg-slate-50 space-y-5">
 
-            {messages.map((m,i)=>(
+            {messages.map((m, i) => (
 
               <div
                 key={i}
                 className={`flex gap-3 ${
-                  m.role==="user" ? "justify-end":"justify-start"
+                  m.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
 
-                {m.role==="assistant" && (
+                {m.role === "assistant" && (
                   <div className="bg-white border border-slate-100 text-indigo-600 shadow-sm rounded-xl h-9 w-9 flex-shrink-0 flex items-center justify-center">
                     <Bot size={18}/>
                   </div>
@@ -182,37 +185,42 @@ export default function AIChatBox(){
 
                 <div
                   className={`px-4 py-3 rounded-2xl max-w-[80%] text-sm shadow-sm leading-relaxed ${
-                    m.role==="user"
+                    m.role === "user"
                       ? "bg-indigo-600 text-white rounded-br-sm font-medium"
-                      : "bg-white border border-slate-100 text-slate-700 rounded-bl-sm"
+                      : "bg-white border border-slate-100 text-slate-700 rounded-bl-sm markdown-content" 
                   }`}
                 >
 
-                  {m.content}
+                  {/* ĐÃ THAY ĐỔI: Thêm remarkPlugins={[remarkGfm]} để render được bảng biểu */}
+                  {m.role === "assistant" ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                  ) : (
+                    m.content
+                  )}
 
                   {/* CHART */}
 
-                  {m.type==="chart" && (
+                  {m.type === "chart" && (
 
                     <div className="mt-3 bg-white border border-slate-100 p-3 rounded-xl shadow-sm">
 
                       <Bar
                         data={{
-                          labels:m.labels,
-                          datasets:[
+                          labels: m.labels,
+                          datasets: [
                             {
-                              label:"Doanh thu",
-                              data:m.values,
-                              backgroundColor:"rgba(79, 70, 229, 0.85)", // Indigo-600
+                              label: "Doanh thu",
+                              data: m.values,
+                              backgroundColor: "rgba(79, 70, 229, 0.85)", // Indigo-600
                               borderRadius: 6,
                               borderSkipped: false,
                             }
                           ]
                         }}
                         options={{
-                          responsive:true,
-                          plugins:{
-                            legend:{display:false},
+                          responsive: true,
+                          plugins: {
+                            legend: { display: false },
                             tooltip: {
                               backgroundColor: '#1e293b',
                               titleFont: { size: 12, weight: 'bold' },
@@ -240,15 +248,15 @@ export default function AIChatBox(){
 
                   {/* SUGGESTIONS IN MESSAGE */}
 
-                  {m.suggestions && m.suggestions.length>0 && (
+                  {m.suggestions && m.suggestions.length > 0 && (
 
                     <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-50">
 
-                      {m.suggestions.map((s,index)=>(
+                      {m.suggestions.map((s, index) => (
 
                         <button
                           key={index}
-                          onClick={()=>sendMessage(s)}
+                          onClick={() => sendMessage(s)}
                           className="text-xs font-semibold bg-indigo-50/70 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1"
                         >
                           <Sparkles size={10} className="text-indigo-500" />
@@ -263,7 +271,7 @@ export default function AIChatBox(){
 
                 </div>
 
-                {m.role==="user" && (
+                {m.role === "user" && (
                   <div className="bg-slate-800 text-white rounded-xl h-9 w-9 flex-shrink-0 flex items-center justify-center font-bold text-xs">
                     {userName.charAt(0).toUpperCase()}
                   </div>
@@ -297,16 +305,16 @@ export default function AIChatBox(){
 
             <input
               value={input}
-              onChange={(e)=>setInput(e.target.value)}
+              onChange={(e) => setInput(e.target.value)}
               placeholder="Hỏi AI về doanh thu, phòng trọ..."
               className="flex-1 border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-slate-400"
-              onKeyDown={(e)=>{
-                if(e.key==="Enter") sendMessage();
+              onKeyDown={(e) => {
+                if (e.key === "Enter") sendMessage();
               }}
             />
 
             <button
-              onClick={()=>sendMessage()}
+              onClick={() => sendMessage()}
               disabled={!input.trim() || loading}
               className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white w-10 h-10 rounded-xl flex items-center justify-center transition-colors flex-shrink-0 shadow-sm shadow-indigo-500/10"
             >

@@ -5,12 +5,11 @@ import { generateSQL } from "../services/sqlGenerator.service.js";
 import { explainData } from "../services/explain.service.js";
 import { validateSQL } from "../utils/sqlValidator.js";
 import { normalizeQuestion } from "../utils/questionParser.js";
-import { formatResult } from "../utils/resultFormatter.js";
 import { verifyToken } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-// Hàm tiện ích: Lưu tin nhắn vào DB để đỡ phải lặp lại code nhiều lần
+// Hàm tiện ích: Lưu tin nhắn vào DB
 async function saveChatMessage(pool, userId, role, msg) {
   await pool.request()
     .input("user", userId)
@@ -35,8 +34,7 @@ router.post("/chat", verifyToken, async (req, res) => {
     /* ===== 1. LƯU TIN NHẮN CỦA USER ===== */
     await saveChatMessage(pool, userId, "user", question);
 
-    /* ===== 2. RULE-BASE: THÔNG TIN CÁ NHÂN ===== */
-    // Chỉ bắt khi user hỏi chính xác những câu này, tránh dính chữ "tôi" ngẫu nhiên
+    /* ===== 2. RULE-BASE: THÔNG TIN CÁ NHÂN & CHÀO HỎI ===== */
     const personalQuestions = [
       "tôi tên gì", 
       "thông tin của tôi", 
@@ -45,8 +43,20 @@ router.post("/chat", verifyToken, async (req, res) => {
       "email của tôi",
       "tôi là ai"
     ];
+    const questionLower = question.toLowerCase().trim();
+    const greetings = ["hi", "hello", "xin chào", "chào bạn", "chào", "chào ai"];
+    
+    if (greetings.includes(questionLower)) {
+      const answer = "Xin chào 👋 Mình là trợ lý AI quản lý nhà trọ của bạn. Mình có thể giúp bạn phân tích doanh thu, tìm phòng trống hoặc kiểm tra ai đang nợ tiền phòng. Bạn cần xem thông tin gì?";
+      await saveChatMessage(pool, userId, "assistant", answer);
+      
+      return res.json({ 
+        answer,
+        suggestions: ["Doanh thu tháng này", "Phòng chưa thanh toán", "Tổng số phòng đang thuê"]
+      });
+    }
 
-    if (personalQuestions.includes(question.toLowerCase())) {
+    if (personalQuestions.includes(questionLower)) {
       const result = await pool.request()
         .input("id", userId)
         .query(`SELECT name, email, phone FROM users WHERE id = @id`);
@@ -55,7 +65,11 @@ router.post("/chat", verifyToken, async (req, res) => {
       const answer = `👤 Tên: ${user.name}\n📧 Email: ${user.email}\n📱 SĐT: ${user.phone}`;
 
       await saveChatMessage(pool, userId, "assistant", answer);
-      return res.json({ answer });
+      
+      return res.json({ 
+        answer,
+        suggestions: ["Doanh thu tháng này", "Phòng chưa thanh toán", "Xem thông tin phòng"]
+      });
     }
 
     /* ===== 3. PHÂN LOẠI Ý ĐỊNH (INTENT) ===== */
@@ -68,14 +82,46 @@ router.post("/chat", verifyToken, async (req, res) => {
 
     /* ===== 4. XỬ LÝ CHAT BÌNH THƯỜNG (KHÔNG CẦN TRUY VẤN DB) ===== */
     if (intent === "CHAT") {
-      const answer = await explainData(question, []); 
+      const explain = await explainData(question, []); 
+      
+      let answer = explain;
+      let suggestions = ["Doanh thu tháng này", "Phòng chưa thanh toán", "Tổng số phòng đang thuê"];
+
+      if (explain.includes("[SUGGESTIONS]")) {
+        const parts = explain.split("[SUGGESTIONS]");
+        answer = parts[0].trim();
+        suggestions = parts[1]
+          .split("\n")
+          .map(s => s.replace("-", "").trim())
+          .filter(s => s.length > 0);
+      }
+
       await saveChatMessage(pool, userId, "assistant", answer);
-      return res.json({ answer });
+      return res.json({ answer, suggestions });
     }
 
     /* ===== 5. XỬ LÝ NGHIỆP VỤ BẰNG AI (TEXT-TO-SQL) ===== */
-    let sqlQuery = await generateSQL(question, userId);
+    
+    // ĐÃ FIX: Lấy 5 tin nhắn gần nhất từ bảng ChatMessages trong DB
+    const historyResult = await pool.request()
+      .input("userId", userId)
+      .query(`
+        SELECT TOP 5 role, message 
+        FROM ChatMessages 
+        WHERE user_id = @userId 
+        ORDER BY id DESC
+      `);
 
+    // Chuyển mảng từ Database về định dạng chuẩn của Groq (Gần nhất nằm ở dưới cùng)
+    // Đã sửa lại item.message thay vì item.parts[0].text bị lỗi
+    const conversationHistory = historyResult.recordset.reverse().map(item => ({
+      role: item.role, 
+      content: item.message 
+    }));
+
+    // Gửi mảng lịch sử (đã bao gồm câu hỏi vừa lưu ở Bước 1) sang Groq
+    let sqlQuery = await generateSQL(conversationHistory, userId);
+    
     // Chuẩn hóa chuỗi SQL AI trả về
     sqlQuery = sqlQuery.replace(/```sql/g, "").replace(/```/g, "").trim();
     console.log("AI Generated SQL:", sqlQuery);
@@ -88,18 +134,32 @@ router.post("/chat", verifyToken, async (req, res) => {
     const data = result.recordset;
 
     /* ===== 6. AI GIẢI THÍCH DỮ LIỆU ĐỌC ĐƯỢC ===== */
-    // Cho AI xử lý 'data' luôn, kể cả khi mảng rỗng [] 
     const explain = await explainData(question, data); 
     
-    const answer = explain; 
+    let answer = explain;
+    let suggestions = ["Doanh thu tháng này", "Phòng chưa thanh toán", "Tổng số phòng đang thuê"]; 
+
+    if (explain.includes("[SUGGESTIONS]")) {
+      const parts = explain.split("[SUGGESTIONS]");
+      answer = parts[0].trim(); 
+      
+      suggestions = parts[1]
+        .split("\n")
+        .map(s => s.replace("-", "").trim())
+        .filter(s => s.length > 0);
+    }
 
     /* LƯU AI MESSAGE VÀ TRẢ VỀ */
     await saveChatMessage(pool, userId, "assistant", answer);
-    return res.json({ answer });
+    
+    return res.json({ answer, suggestions });
 
   } catch (err) {
     console.error("AI ROUTE ERROR:", err);
-    res.status(500).json({ answer: "⚠️ Trợ lý AI đang gặp sự cố hoặc câu hỏi quá phức tạp. Vui lòng thử lại sau." });
+    res.status(500).json({ 
+      answer: "⚠️ Trợ lý AI đang gặp sự cố hoặc câu hỏi quá phức tạp. Vui lòng thử lại sau.",
+      suggestions: ["Thử lại", "Doanh thu tháng này"]
+    });
   }
 });
 

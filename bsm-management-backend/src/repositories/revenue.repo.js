@@ -30,6 +30,7 @@ export async function getRevenueRepo(ownerId, year, month, houseId) {
     JOIN rooms r ON i.room_id = r.id
     WHERE r.owner_id = @owner_id
       AND YEAR(i.created_at) = @year
+      AND i.status = 'PAID'
       ${monthCondition}
       ${houseCondition}
     GROUP BY FORMAT(i.created_at, 'MM')

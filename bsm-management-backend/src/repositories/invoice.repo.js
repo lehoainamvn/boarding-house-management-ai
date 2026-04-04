@@ -1,5 +1,6 @@
 import sql from "mssql";
 import { poolPromise } from "../config/db.js";
+import { createNotification } from "../services/notification.service.js"; // 👉 Import file thông báo vào đây
 
 export async function createInvoiceRepo(data) {
   const pool = await poolPromise;
@@ -68,7 +69,27 @@ export async function createInvoiceRepo(data) {
         @total_amount
       )
     `);
+
+  // 🔥 4. TỰ ĐỘNG TẠO THÔNG BÁO KHI TẠO HÓA ĐƠN THÀNH CÔNG
+  try {
+    const formattedMoney = new Intl.NumberFormat('vi-VN', { 
+      style: 'currency', 
+      currency: 'VND' 
+    }).format(data.total_amount);
+
+    await createNotification({
+      user_id: tenantId,
+      title: "Hóa đơn mới",
+      content: `Hóa đơn tháng ${data.month} đã được tạo. Tổng tiền cần thanh toán: ${formattedMoney}.`
+    });
+
+    console.log(`🔔 Đã lưu thông báo hóa đơn thành công cho tenant: ${tenantId}`);
+  } catch (error) {
+    // Không ném lỗi throw ở đây để tránh việc hóa đơn tạo thành công nhưng lại bị lỗi vì cái thông báo
+    console.error("❌ Lỗi tự động tạo thông báo ở repository:", error);
+  }
 }
+
 export async function getInvoicesByMonth(ownerId, month, houseId) {
   const pool = await poolPromise;
 
@@ -94,7 +115,7 @@ export async function getInvoicesByMonth(ownerId, month, houseId) {
       i.created_at,
       r.room_name,
       u.name AS tenant_name,
-      u.phone AS tenant_phone   -- 🔥 THÊM DÒNG NÀY
+      u.phone AS tenant_phone
     FROM invoices i
     JOIN rooms r ON i.room_id = r.id
     JOIN users u ON i.tenant_id = u.id
@@ -106,6 +127,7 @@ export async function getInvoicesByMonth(ownerId, month, houseId) {
 
   return result.recordset;
 }
+
 export async function getInvoiceById(ownerId, invoiceId) {
   const pool = await poolPromise;
 
@@ -117,7 +139,7 @@ export async function getInvoiceById(ownerId, invoiceId) {
         i.*,
         r.room_name,
         u.name AS tenant_name,
-        u.phone AS tenant_phone  -- 🔥 THÊM DÒNG NÀY
+        u.phone AS tenant_phone
       FROM invoices i
       JOIN rooms r ON i.room_id = r.id
       JOIN users u ON i.tenant_id = u.id
@@ -127,6 +149,7 @@ export async function getInvoiceById(ownerId, invoiceId) {
 
   return result.recordset[0];
 }
+
 export async function markInvoicePaid(ownerId, invoiceId) {
   const pool = await poolPromise;
 
@@ -148,6 +171,7 @@ export async function markInvoicePaid(ownerId, invoiceId) {
 
   return result.rowsAffected[0] === 1;
 }
+
 /* =========================
    TENANT - GET ALL INVOICES
 ========================= */
@@ -183,6 +207,7 @@ export async function getLatestInvoiceByTenantId(tenantId) {
 
   return result.recordset[0];
 }
+
 export async function getInvoiceDetailByTenantId(tenantId, invoiceId) {
   const pool = await poolPromise;
 
@@ -199,6 +224,7 @@ export async function getInvoiceDetailByTenantId(tenantId, invoiceId) {
 
   return result.recordset[0];
 }
+
 export async function getTenantStatisticsRepo(tenantId) {
   const pool = await poolPromise;
 

@@ -7,5 +7,5 @@ router.post("/create-url", paymentController.createPaymentUrl);
 
 // VNPAY gọi cái này để thông báo kết quả (IPN)
 router.get("/vnpay-ipn", paymentController.vnpayIPN);
-router.get("/vnpay-return", paymentController.vnpayReturn);
+router.get("/vnpay-return", paymentController.vnpayReturn); 
 export default router;

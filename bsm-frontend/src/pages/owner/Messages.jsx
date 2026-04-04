@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { getSocket } from "../../socket";
-import { Search, Send, MessageSquare, Phone, Video, MoreVertical, Check, CheckCheck } from "lucide-react";
+import { Search, Send, MessageSquare, Phone, Video, MoreVertical, CheckCheck, Paperclip, X, Image as ImageIcon } from "lucide-react";
+import toast from "react-hot-toast";
 
 const API_URL = "http://localhost:5000/api";
 
@@ -16,7 +17,13 @@ export default function Messages() {
   const [loadingRooms, setLoadingRooms] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
 
+  // State phục vụ việc chủ trọ gửi ảnh
+  const [selectedImage, setSelectedImage] = useState(null); 
+  const [imagePreview, setImagePreview] = useState(null); 
+  const [isUploading, setIsUploading] = useState(false);
+
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
   const user = JSON.parse(localStorage.getItem("user"));
 
   /* AUTO SCROLL */
@@ -80,29 +87,97 @@ export default function Messages() {
     return () => socket.off("receive_message", handleReceive);
   }, [selectedRoom]);
 
-  /* SEND */
+  /* XỬ LÝ CHỌN ẢNH (CHỦ TRỌ) */
+  function handleImageChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Vui lòng chỉ chọn file hình ảnh!");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Kích thước ảnh không được vượt quá 5MB!");
+      return;
+    }
+
+    setSelectedImage(file);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  /* HỦY BỎ ẢNH ĐÃ CHỌN */
+  function clearSelectedImage() {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  /* SEND MESSAGE */
   async function sendMessage() {
-    if (!content.trim() || !selectedRoom) return;
+    if (!content.trim() && !selectedImage) return;
+    if (!selectedRoom) return;
 
     const token = localStorage.getItem("token");
-    const res = await fetch(`${API_URL}/messages`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        room_id: selectedRoom.id,
-        receiver_id: selectedRoom.tenant_id,
-        content: content.trim()
-      })
-    });
+    let imageUrl = null;
 
-    const saved = await res.json();
-    if (!saved.id) return;
+    try {
+      setIsUploading(true);
 
-    socket.emit("send_message", saved);
-    setContent("");
+      // 1. UPLOAD ẢNH LÊN SERVER NẾU CHỦ TRỌ CÓ CHỌN
+      if (selectedImage) {
+        const formData = new FormData();
+        formData.append("image", selectedImage);
+
+        const uploadRes = await fetch(`${API_URL}/upload`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData
+        });
+
+        if (!uploadRes.ok) {
+          toast.error("Không thể upload hình ảnh!");
+          setIsUploading(false);
+          return;
+        }
+
+        const uploadData = await uploadRes.json();
+        imageUrl = uploadData.url; 
+      }
+
+      // 2. GỬI TIN NHẮN (Gộp link ảnh vào đuôi Content)
+      const res = await fetch(`${API_URL}/messages`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          room_id: selectedRoom.id,
+          receiver_id: selectedRoom.tenant_id,
+          content: imageUrl ? `${content.trim()} [img]${imageUrl}[/img]`.trim() : content.trim()
+        })
+      });
+
+      const saved = await res.json();
+      if (!saved.id) return;
+
+      socket.emit("send_message", saved);
+      
+      setContent("");
+      clearSelectedImage();
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Có lỗi xảy ra khi gửi tin nhắn!");
+    } finally {
+      setIsUploading(false);
+    }
   }
 
   const filteredRooms = rooms.filter(r =>
@@ -139,7 +214,6 @@ export default function Messages() {
         {/* Room List */}
         <div className="flex-1 overflow-y-auto divide-y divide-slate-50">
           {loadingRooms ? (
-            // Skeleton loading cho danh sách phòng
             Array.from({ length: 4 }).map((_, idx) => (
               <div key={idx} className="flex items-center gap-3 p-4 animate-pulse">
                 <div className="w-12 h-12 bg-slate-200 rounded-full"></div>
@@ -230,7 +304,6 @@ export default function Messages() {
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-3">
               {loadingMessages ? (
-                // Skeleton loading cho tin nhắn
                 Array.from({ length: 4 }).map((_, idx) => (
                   <div key={idx} className={`flex ${idx % 2 === 0 ? "justify-end" : "justify-start"}`}>
                     <div className={`h-10 bg-slate-200 rounded-2xl w-1/3 animate-pulse ${idx % 2 === 0 ? "rounded-br-none" : "rounded-bl-none"}`}></div>
@@ -243,9 +316,19 @@ export default function Messages() {
               ) : (
                 messages.map((msg, index) => {
                   const isMe = msg.sender_id === user.id;
-                  
-                  // Gom cụm tin nhắn: Kiểm tra xem tin nhắn sau có cùng người gửi không
                   const isLastFromUser = index === messages.length - 1 || messages[index + 1].sender_id !== msg.sender_id;
+
+                  // --- LOGIC TÁCH ẢNH THÔNG MINH ---
+                  let textDisplay = msg.content;
+                  let extractedImgUrl = null;
+
+                  if (msg.content && msg.content.includes("[img]") && msg.content.includes("[/img]")) {
+                    const start = msg.content.indexOf("[img]") + 5;
+                    const end = msg.content.indexOf("[/img]");
+                    extractedImgUrl = msg.content.substring(start, end);
+                    textDisplay = msg.content.replace(`[img]${extractedImgUrl}[/img]`, "").trim();
+                  }
+                  // ---------------------------------
 
                   return (
                     <div
@@ -253,12 +336,27 @@ export default function Messages() {
                       className={`flex ${isMe ? "justify-end" : "justify-start"} ${isLastFromUser ? "mb-3" : "mb-1"}`}
                     >
                       <div
-                        className={`px-4 py-2.5 max-w-[65%] text-[13.5px] shadow-sm relative group transition-all
+                        className={`px-4 py-2.5 max-w-[65%] text-[13.5px] shadow-sm relative group transition-all space-y-2
                         ${isMe
                           ? `bg-indigo-600 text-white ${isLastFromUser ? "rounded-2xl rounded-br-sm" : "rounded-2xl"}`
                           : `bg-white border border-slate-200 text-slate-800 ${isLastFromUser ? "rounded-2xl rounded-bl-sm" : "rounded-2xl"}`}`}
                       >
-                        <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                        {/* HIỂN THỊ HÌNH ẢNH NẾU CÓ */}
+                        {extractedImgUrl && (
+                          <div className="rounded-lg overflow-hidden border border-black/5 mb-1 max-w-[250px]">
+                            <img 
+                              src={extractedImgUrl} 
+                              alt="Ảnh đính kèm" 
+                              className="w-full h-auto object-cover max-h-60 cursor-pointer"
+                              onClick={() => window.open(extractedImgUrl, "_blank")}
+                            />
+                          </div>
+                        )}
+
+                        {/* HIỂN THỊ CHỮ NẾU CÓ */}
+                        {textDisplay && (
+                          <p className="whitespace-pre-wrap break-words">{textDisplay}</p>
+                        )}
 
                         <div className={`text-[10px] opacity-70 mt-1 flex items-center justify-end gap-1 ${isMe ? "text-indigo-100" : "text-slate-500"}`}>
                           {new Date(msg.created_at).toLocaleTimeString([], {
@@ -277,30 +375,70 @@ export default function Messages() {
 
             {/* Input Area */}
             <div className="border-t border-slate-200 p-4 bg-white">
+              
+              {/* KHU VỰC PREVIEW ẢNH (DÀNH CHO CHỦ TRỌ) */}
+              {imagePreview && (
+                <div className="mb-3 relative inline-block">
+                  <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-indigo-200">
+                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                  <button 
+                    onClick={clearSelectedImage}
+                    className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white p-0.5 rounded-full hover:bg-rose-600 transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+
               <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all">
+                
+                {/* Input file ẩn đi */}
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
+
+                {/* Nút đính kèm ảnh */}
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`${imagePreview ? "text-indigo-600" : "text-slate-400"} hover:text-indigo-600 p-2 hover:bg-white rounded-lg transition-colors`}
+                  disabled={isUploading}
+                >
+                  {imagePreview ? <ImageIcon size={18} /> : <Paperclip size={18} />}
+                </button>
+
                 <input
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
+                    if (e.key === "Enter" && !e.shiftKey && !isUploading) {
                       e.preventDefault();
                       sendMessage();
                     }
                   }}
-                  placeholder="Nhập nội dung tin nhắn..."
+                  placeholder={imagePreview ? "Thêm chú thích cho ảnh..." : "Nhập nội dung tin nhắn..."}
                   className="flex-1 bg-transparent border-none text-sm focus:outline-none text-slate-800 placeholder-slate-400 py-2"
+                  disabled={isUploading}
                 />
 
                 <button
                   onClick={sendMessage}
-                  disabled={!content.trim()}
+                  disabled={(!content.trim() && !selectedImage) || isUploading}
                   className={`p-2.5 rounded-xl transition-all ${
-                    !content.trim()
+                    (!content.trim() && !selectedImage) || isUploading
                       ? "text-slate-300 bg-transparent cursor-not-allowed"
                       : "text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm"
                   }`}
                 >
-                  <Send size={16} />
+                  {isUploading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <Send size={16} />
+                  )}
                 </button>
               </div>
               <p className="text-xs text-slate-400 mt-2 ml-2">Mẹo: Nhấn `Enter` để gửi, `Shift + Enter` để xuống dòng.</p>
