@@ -11,8 +11,8 @@ export default function TenantContact() {
   const [room, setRoom] = useState(null);
   
   // State phục vụ việc gửi ảnh
-  const [selectedImage, setSelectedImage] = useState(null); // Lưu file thật để upload
-  const [imagePreview, setImagePreview] = useState(null); // Lưu base64 để hiển thị preview
+  const [selectedImage, setSelectedImage] = useState(null); 
+  const [imagePreview, setImagePreview] = useState(null); 
   const [isUploading, setIsUploading] = useState(false);
 
   const user = JSON.parse(localStorage.getItem("user"));
@@ -76,13 +76,11 @@ export default function TenantContact() {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Kiểm tra file có phải là ảnh không
     if (!file.type.startsWith("image/")) {
       toast.error("Vui lòng chỉ chọn file hình ảnh!");
       return;
     }
 
-    // Kiểm tra dung lượng (VD: giới hạn 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Kích thước ảnh không được vượt quá 5MB!");
       return;
@@ -90,7 +88,6 @@ export default function TenantContact() {
 
     setSelectedImage(file);
 
-    // Tạo URL giả lập để xem trước (Preview)
     const reader = new FileReader();
     reader.onloadend = () => {
       setImagePreview(reader.result);
@@ -105,9 +102,8 @@ export default function TenantContact() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  /* SEND MESSAGE & IMAGE */
+  /* SEND MESSAGE */
   async function sendMessage() {
-    // Không có nội dung và cũng không có ảnh thì không gửi
     if (!content.trim() && !selectedImage) return;
     if (!room?.id) return;
 
@@ -122,24 +118,23 @@ export default function TenantContact() {
         const formData = new FormData();
         formData.append("image", selectedImage);
 
-        // Bạn cần viết thêm API này ở backend nhé
         const uploadRes = await fetch(`${API_URL}/upload`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
           body: formData
         });
 
-        const uploadData = await uploadRes.json();
-        if (uploadData.url) {
-          imageUrl = uploadData.url; // Giả định backend trả về { url: "http://..." }
-        } else {
+        if (!uploadRes.ok) {
           toast.error("Không thể upload hình ảnh!");
           setIsUploading(false);
           return;
         }
+
+        const uploadData = await uploadRes.json();
+        imageUrl = uploadData.url; 
       }
 
-      // 2. GỬI TIN NHẮN (Kèm theo link ảnh nếu có)
+      // 2. GỬI TIN NHẮN (Gộp link ảnh vào đuôi Content để né lỗi 400)
       const res = await fetch(`${API_URL}/messages`, {
         method: "POST",
         headers: {
@@ -149,8 +144,7 @@ export default function TenantContact() {
         body: JSON.stringify({
           room_id: room.id,
           receiver_id: room.owner_id,
-          content: content.trim(),
-          image_url: imageUrl // Truyền thêm link ảnh xuống backend
+          content: imageUrl ? `${content.trim()} [img]${imageUrl}[/img]`.trim() : content.trim()
         })
       });
 
@@ -159,7 +153,6 @@ export default function TenantContact() {
 
       socket.emit("send_message", saved);
       
-      // Reset form
       setContent("");
       clearSelectedImage();
 
@@ -220,6 +213,18 @@ export default function TenantContact() {
         {messages.map(msg => {
           const isMe = msg.sender_id === user.id;
           
+          // --- LOGIC TÁCH ẢNH THÔNG MINH ---
+          let textDisplay = msg.content;
+          let extractedImgUrl = null;
+
+          if (msg.content && msg.content.includes("[img]") && msg.content.includes("[/img]")) {
+            const start = msg.content.indexOf("[img]") + 5;
+            const end = msg.content.indexOf("[/img]");
+            extractedImgUrl = msg.content.substring(start, end);
+            textDisplay = msg.content.replace(`[img]${extractedImgUrl}[/img]`, "").trim();
+          }
+          // ---------------------------------
+
           return (
             <div
               key={msg.id}
@@ -232,21 +237,21 @@ export default function TenantContact() {
                   : "bg-white border border-slate-100 text-slate-700 rounded-2xl rounded-tl-sm font-medium"}
                 `}
               >
-                {/* HIỂN THỊ HÌNH ẢNH NẾU CÓ */}
-                {msg.image_url && (
+                {/* HIỂN THỊ HÌNH ẢNH NẾU TÁCH THÀNH CÔNG */}
+                {extractedImgUrl && (
                   <div className="rounded-lg overflow-hidden border border-black/5 mb-1 max-w-[250px]">
                     <img 
-                      src={msg.image_url} 
+                      src={extractedImgUrl} 
                       alt="Ảnh đính kèm" 
-                      className="w-full h-auto object-cover max-h-60"
-                      onClick={() => window.open(msg.image_url, "_blank")} // Bấm vào để phóng to
+                      className="w-full h-auto object-cover max-h-60 cursor-pointer"
+                      onClick={() => window.open(extractedImgUrl, "_blank")}
                     />
                   </div>
                 )}
 
                 {/* HIỂN THỊ CHỮ NẾU CÓ */}
-                {msg.content && (
-                  <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
+                {textDisplay && (
+                  <p className="leading-relaxed whitespace-pre-wrap break-words">{textDisplay}</p>
                 )}
 
                 <div className={`text-[10px] mt-1.5 flex items-center justify-end font-medium ${isMe ? "text-indigo-200" : "text-slate-400"}`}>
@@ -283,7 +288,6 @@ export default function TenantContact() {
 
         <div className="bg-slate-50 rounded-xl border border-slate-200 focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100 transition-all flex items-center gap-2 px-3 py-1.5">
           
-          {/* Input file ẩn đi */}
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -292,7 +296,6 @@ export default function TenantContact() {
             onChange={handleImageChange}
           />
 
-          {/* Bấm vào icon này để kích hoạt input file */}
           <button 
             onClick={() => fileInputRef.current?.click()}
             className={`${imagePreview ? "text-indigo-600" : "text-slate-400"} hover:text-indigo-600 p-2 hover:bg-white rounded-lg transition-colors`}
@@ -309,7 +312,6 @@ export default function TenantContact() {
             disabled={isUploading}
           />
 
-          {/* Nút emoji giả lập */}
           <button className="text-slate-400 hover:text-indigo-600 p-2 hover:bg-white rounded-lg transition-colors">
             <Smile size={18} />
           </button>
