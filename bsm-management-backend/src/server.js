@@ -126,7 +126,7 @@ app.use("/api/payment", paymentRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api", uploadRoutes);
 app.use("/api/notifications", notificationRoutes);
-app.use
+
 // ===== START SERVER =====
 /* START SERVER */
 const PORT = process.env.PORT || 5000;

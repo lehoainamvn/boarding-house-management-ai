@@ -1,5 +1,6 @@
 import {
   getAllClientsService,
+  getAllClientsWithStatusService,
   createClientService,
   updateClientService,
   deleteClientService
@@ -8,7 +9,8 @@ import {
 /* ===== GET ===== */
 export async function getClients(req, res) {
   try {
-    const clients = await getAllClientsService();
+    const ownerId = req.user.id;
+    const clients = await getAllClientsWithStatusService(ownerId);
     res.json(clients);
   } catch (e) {
     res.status(500).json({ message: "Lỗi server" });

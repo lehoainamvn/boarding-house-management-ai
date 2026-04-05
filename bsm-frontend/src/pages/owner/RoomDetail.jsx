@@ -29,6 +29,9 @@ export default function RoomDetail() {
   const [email, setEmail] = useState("");
   const [foundTenant, setFoundTenant] = useState(null);
   const [error, setError] = useState("");
+  const [startDateExisting, setStartDateExisting] = useState(
+    new Date().toISOString().slice(0, 10)
+  );
 
   /* ===== TENANT NEW ===== */
   const [isCreatingNewTenant, setIsCreatingNewTenant] = useState(false);
@@ -36,6 +39,7 @@ export default function RoomDetail() {
     name: "",
     email: "",
     phone: "",
+    start_date: new Date().toISOString().slice(0, 10), // Thêm ngày vào form tạo mới
   });
 
   useEffect(() => {
@@ -176,7 +180,7 @@ export default function RoomDetail() {
           body: JSON.stringify({
             tenantType: "EXISTING",
             email: foundTenant.email,
-            start_date: new Date().toISOString().slice(0, 10),
+            start_date: startDateExisting,
           }),
         }
       );
@@ -185,6 +189,8 @@ export default function RoomDetail() {
       if (!res.ok) throw new Error(data.message);
 
       toast.success("Gán người thuê thành công");
+      setEmail("");
+      setFoundTenant(null);
       fetchRoom();
     } catch (err) {
       toast.error(err.message);
@@ -228,7 +234,6 @@ export default function RoomDetail() {
           body: JSON.stringify({
             tenantType: "NEW",
             ...newTenantForm,
-            start_date: new Date().toISOString().slice(0, 10),
           }),
         }
       );
@@ -238,7 +243,12 @@ export default function RoomDetail() {
 
       toast.success("Tạo & gán phòng thành công");
       setIsCreatingNewTenant(false);
-      setNewTenantForm({ name: "", email: "", phone: "" });
+      setNewTenantForm({
+        name: "",
+        email: "",
+        phone: "",
+        start_date: new Date().toISOString().slice(0, 10),
+      });
       fetchRoom();
     } catch (err) {
       toast.error(err.message);
@@ -246,6 +256,13 @@ export default function RoomDetail() {
   }
 
   const money = (n) => n?.toLocaleString("vi-VN") + " đ";
+  
+  // Hàm format hiển thị ngày cho đẹp
+  const formatDate = (dateString) => {
+    if (!dateString) return "Chưa xác định";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("vi-VN");
+  };
 
   if (loading)
     return (
@@ -530,6 +547,16 @@ export default function RoomDetail() {
                     {room.tenant.phone}
                   </p>
                 </div>
+                
+                {/* HIỂN THỊ NGÀY NHẬN PHÒNG */}
+                <div className="border-t border-slate-200 pt-2 mt-2">
+                  <p className="text-xs font-semibold text-indigo-500 uppercase">
+                    Ngày nhận phòng
+                  </p>
+                  <p className="text-sm font-semibold text-slate-800 mt-0.5">
+                    {formatDate(room.tenant?.start_date)}
+                  </p>
+                </div>
               </div>
 
               <button
@@ -569,13 +596,27 @@ export default function RoomDetail() {
                     )}
 
                     {foundTenant && (
-                      <div className="mt-4 bg-emerald-50 p-4 rounded-xl border border-emerald-100 space-y-2">
+                      <div className="mt-4 bg-emerald-50 p-4 rounded-xl border border-emerald-100 space-y-3">
                         <p className="text-sm font-semibold text-slate-800">
                           {foundTenant.name}
                         </p>
                         <p className="text-xs text-slate-500">
                           {foundTenant.email} • {foundTenant.phone}
                         </p>
+                        
+                        {/* CHỌN NGÀY KHI GÁN TÀI KHOẢN CÓ SẴN */}
+                        <div>
+                          <label className="text-xs font-semibold text-slate-500 uppercase">
+                            Chọn ngày nhận phòng
+                          </label>
+                          <input
+                            type="date"
+                            className="w-full mt-1 px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                            value={startDateExisting}
+                            onChange={(e) => setStartDateExisting(e.target.value)}
+                          />
+                        </div>
+                        
                         <button
                           onClick={handleAssignTenant}
                           className="mt-2 w-full bg-emerald-600 text-white text-xs font-medium py-2 rounded-lg hover:bg-emerald-700 transition"
@@ -602,7 +643,7 @@ export default function RoomDetail() {
                 <div className="space-y-4">
                   <label className="text-xs font-semibold text-slate-500 uppercase">
                     Khởi tạo hồ sơ mới
-                    </label>
+                  </label>
                   {["name", "email", "phone"].map((k) => (
                     <input
                       key={k}
@@ -623,6 +664,25 @@ export default function RoomDetail() {
                       }
                     />
                   ))}
+                  
+                  {/* CHỌN NGÀY KHI TẠO MỚI */}
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 uppercase">
+                      Ngày nhận phòng
+                    </label>
+                    <input
+                      type="date"
+                      className="w-full mt-1 px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                      value={newTenantForm.start_date}
+                      onChange={(e) =>
+                        setNewTenantForm({
+                          ...newTenantForm,
+                          start_date: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+
                   <div className="flex gap-2 pt-2">
                     <button
                       onClick={handleCreateAndAssignTenant}

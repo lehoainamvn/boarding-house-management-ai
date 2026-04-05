@@ -7,7 +7,6 @@ import {
   Trash2,
   Wallet,
   Eye,
-  Plus,
   Zap,
   Droplet,
   Home,
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { getRoomsByHouse, createRoom, deleteRoom } from "../../api/room.api";
+import AddButton from "../../components/AddButton"; // <-- Import nút dùng chung ở đây
 
 const API_HOUSES = "http://localhost:5000/api/houses";
 const PAGE_SIZE = 8;
@@ -27,6 +27,11 @@ export default function Rooms() {
   const [allRooms, setAllRooms] = useState([]);
   const [visibleRooms, setVisibleRooms] = useState([]);
   const [page, setPage] = useState(1);
+  const [settings, setSettings] = useState({
+    default_room_price: 0,
+    default_electric_price: 0,
+    default_water_price: 0
+  });
 
   const [loading, setLoading] = useState(true);
 
@@ -57,7 +62,28 @@ export default function Rooms() {
       const data = await res.json();
       setHouses(data);
     }
+
+    async function fetchSettings() {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:5000/api/settings", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        setSettings((prev) => ({
+          ...prev,
+          default_room_price: data.default_room_price ?? prev.default_room_price,
+          default_electric_price: data.default_electric_price ?? prev.default_electric_price,
+          default_water_price: data.default_water_price ?? prev.default_water_price,
+        }));
+      } catch (error) {
+        // ignore; nếu không lấy được settings thì vẫn tạo được phòng với giá 0
+      }
+    }
+
     fetchHouses();
+    fetchSettings();
   }, []);
 
   useEffect(() => {
@@ -116,9 +142,9 @@ export default function Rooms() {
       await createRoom({
         house_id: houseId,
         room_name: `Phòng ${allRooms.length + 1}`,
-        room_price: 0,
-        electric_price: 0,
-        water_price: 0,
+        room_price: settings.default_room_price,
+        electric_price: settings.default_electric_price,
+        water_price: settings.default_water_price,
       });
 
       const data = await getRoomsByHouse(houseId);
@@ -177,13 +203,8 @@ export default function Rooms() {
             <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           </div>
 
-          <button
-            onClick={handleAddRoom}
-            className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all"
-          >
-            <Plus size={16} />
-            Thêm phòng
-          </button>
+          {/* SỬ DỤNG ADD BUTTON TẠI ĐÂY */}
+          <AddButton onClick={handleAddRoom} label="Thêm phòng" />
         </div>
       </div>
 
@@ -200,13 +221,12 @@ export default function Rooms() {
       {!loading && visibleRooms.length === 0 && (
         <div className="text-center py-20 border border-dashed border-slate-200 rounded-2xl">
           <BedDouble size={48} className="mx-auto mb-4 text-slate-300" />
-          <p className="text-slate-500 text-sm font-medium">Chưa có phòng nào trong nhà này.</p>
-          <button 
-            onClick={handleAddRoom} 
-            className="mt-4 text-indigo-600 font-bold hover:text-indigo-700 text-sm"
-          >
-            + Bấm vào đây để tạo nhanh phòng mới
-          </button>
+          <p className="text-slate-500 text-sm font-medium mb-4">Chưa có phòng nào trong nhà này.</p>
+          
+          {/* SỬ DỤNG ADD BUTTON Ở ĐÂY CHO TRẠNG THÁI RỖNG */}
+          <div className="inline-flex justify-center">
+            <AddButton onClick={handleAddRoom} label="Tạo nhanh phòng mới" />
+          </div>
         </div>
       )}
 

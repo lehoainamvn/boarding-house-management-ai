@@ -1,11 +1,80 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
-import { Plus, Edit, Trash2, User, Mail, Phone, Lock, Search, X } from "lucide-react";
+import { Edit, Trash2, User, Mail, Phone, Lock, Search, X, Users, Clock, ChevronDown } from "lucide-react";
+import AddButton from "../../components/AddButton"; 
 
+// ==========================================
+// COMPONENT: Custom Dropdown đồng bộ
+// ==========================================
+function CustomDropdown({ label, icon: Icon, options, value, onChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedLabel = options.find((opt) => opt.value === value)?.label || options[0]?.label;
+
+  return (
+    <div className="w-full" ref={dropdownRef}>
+      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+        {label}
+      </label>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className={`w-full h-11 flex items-center justify-between pl-10 pr-3.5 text-sm font-medium text-slate-700 bg-slate-50 border rounded-xl transition-all shadow-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 ${
+            isOpen ? "border-indigo-500 bg-white" : "border-slate-200 hover:border-slate-300 bg-white"
+          }`}
+        >
+          <Icon size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${isOpen ? "text-indigo-500" : "text-slate-400"}`} />
+          <span className="truncate pr-2">{selectedLabel}</span>
+          <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180 text-indigo-500" : ""}`} />
+        </button>
+
+        {isOpen && (
+          <div className="absolute z-50 top-full left-0 w-full mt-1.5 bg-white border border-slate-100 rounded-xl shadow-lg shadow-slate-200/50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+            <ul className="max-h-60 overflow-y-auto p-1.5 custom-scrollbar">
+              {options.map((opt) => (
+                <li
+                  key={opt.value}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                  }}
+                  className={`px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
+                    value === opt.value
+                      ? "bg-indigo-50 text-indigo-700 font-bold"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium"
+                  }`}
+                >
+                  {opt.label}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// COMPONENT CHÍNH: Tenants
+// ==========================================
 export default function Tenants() {
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("current"); // "current" or "past"
 
   const [editingTenant, setEditingTenant] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -163,11 +232,33 @@ export default function Tenants() {
     }
   }
 
-  const filteredTenants = tenants.filter(
-    (t) =>
+  const filteredTenants = tenants
+    .filter((t) => {
+      if (activeTab === "current") return t.status === "CURRENT";
+      if (activeTab === "past") return t.status === "PAST";
+      return true;
+    })
+    .filter((t) =>
       t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (t.email && t.email.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+    );
+
+  // Dữ liệu cho Dropdown trạng thái
+  const currentCount = tenants.filter(t => t.status === "CURRENT").length;
+  const pastCount = tenants.filter(t => t.status === "PAST").length;
+
+  // Hàm format hiển thị ngày cho đẹp
+  const formatDate = (dateString) => {
+    if (!dateString) return "—";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("vi-VN");
+  };
+
+
+  const statusOptions = [
+    { value: "current", label: `Khách đang ở (${currentCount})` },
+    { value: "past", label: `Đã từng ở (${pastCount})` }
+  ];
 
   if (loading) {
     return (
@@ -184,33 +275,58 @@ export default function Tenants() {
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Quản lý khách thuê</h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Quản lý thông tin và tài khoản của cư dân trong hệ thống
+            {activeTab === "current" 
+              ? "Quản lý thông tin và tài khoản của cư dân đang thuê phòng"
+              : "Xem lịch sử khách thuê đã từng ở trong hệ thống"
+            }
           </p>
         </div>
-        <button
+        
+        <AddButton 
           onClick={() => {
             setForm(emptyForm);
             setShowAddModal(true);
-          }}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition shadow-sm"
-        >
-          <Plus size={16} />
-          Thêm khách mới
-        </button>
-      </div>
-
-      {/* THANH TÌM KIẾM CHUYÊN NGHIỆP */}
-      <div className="relative max-w-md">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search size={16} className="text-slate-400" />
-        </div>
-        <input
-          type="text"
-          placeholder="Tìm kiếm theo tên hoặc email..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+          }} 
+          label="Thêm khách mới" 
         />
+      </div> {/* <-- Đã đóng thẻ div bị thiếu của bạn ở đây */}
+
+      {/* FILTER BOX */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-end">
+          
+          {/* SỬ DỤNG CUSTOM DROPDOWN ĐÃ ĐƯỢC ÁP DỤNG */}
+          <CustomDropdown
+            label="Trạng thái khách"
+            icon={activeTab === "current" ? Users : Clock}
+            options={statusOptions}
+            value={activeTab}
+            onChange={setActiveTab}
+          />
+
+          {/* THANH TÌM KIẾM CHUYÊN NGHIỆP */}
+          <div className="md:col-span-2 w-full">
+            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+              Tìm kiếm nhanh
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <Search size={16} className="text-slate-400" />
+              </div>
+              <input
+                type="text"
+                placeholder={
+                  activeTab === "current" 
+                    ? "Tìm kiếm khách đang thuê theo tên hoặc email..."
+                    : "Tìm kiếm khách cũ theo tên hoặc email..."
+                }
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full h-11 pl-10 pr-4 border border-slate-200 rounded-xl bg-white text-sm font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all shadow-sm"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* DANH SÁCH BẢNG KHÁCH THUÊ */}
@@ -218,7 +334,12 @@ export default function Tenants() {
         {filteredTenants.length === 0 ? (
           <div className="text-center py-16 text-slate-400">
             <User size={48} className="mx-auto mb-4 text-slate-300" />
-            <p className="text-sm font-medium">Không tìm thấy khách thuê nào</p>
+            <p className="text-sm font-medium">
+              {activeTab === "current" 
+                ? "Không có khách đang thuê phòng" 
+                : "Không có khách đã từng thuê phòng"
+              }
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -228,6 +349,9 @@ export default function Tenants() {
                   <th className="px-6 py-4">Khách thuê</th>
                   <th className="px-6 py-4">Email</th>
                   <th className="px-6 py-4">Số điện thoại</th>
+                  <th className="px-6 py-4">Ngày vào</th>
+                  <th className="px-6 py-4">Ngày ra</th>
+                  <th className="px-6 py-4 text-center">Trạng thái</th>
                   <th className="px-6 py-4 text-right">Thao tác</th>
                 </tr>
               </thead>
@@ -242,6 +366,19 @@ export default function Tenants() {
                     </td>
                     <td className="px-6 py-4 text-slate-600">{t.email || "—"}</td>
                     <td className="px-6 py-4 text-slate-600">{t.phone}</td>
+                    <td className="px-6 py-4 text-slate-600">{formatDate(t.first_start_date)}</td>
+                    <td className="px-6 py-4 text-slate-600">{formatDate(t.last_end_date)}</td>
+                    <td className="px-6 py-4 text-center">
+                      <span
+                        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${
+                          t.status === "CURRENT"
+                            ? "bg-emerald-50 text-emerald-600"
+                            : "bg-slate-50 text-slate-600"
+                        }`}
+                      >
+                        {t.status === "CURRENT" ? "Đang ở" : "Đã từng ở"}
+                      </span>
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex justify-end gap-2">
                         <button

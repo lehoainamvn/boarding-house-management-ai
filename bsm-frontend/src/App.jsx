@@ -21,6 +21,7 @@ import ChangePassword from "./pages/owner/ChangePassword";
 import Messages from "./pages/owner/Messages";
 import RevenuePrediction from "./pages/owner/RevenuePrediction";
 
+
 /* TENANT */
 import TenantHome from "./pages/tenant/TenantHome";
 import TenantRoom from "./pages/tenant/TenantRoom";
@@ -31,6 +32,7 @@ import TenantStatistics from "./pages/tenant/TenantStatistics";
 import TenantProfile from "./pages/tenant/TenantProfile";
 import TenantChangePassword from "./pages/tenant/TenantChangePassword";
 import PaymentReturn from "./pages/tenant/PaymentReturn";
+import TenantRules from "./pages/tenant/Rules";
 /* LAYOUT */
 import DashboardLayout from "./layouts/DashboardLayout";
 import TenantLayout from "./layouts/TenantLayout";
@@ -69,6 +71,7 @@ export default function App() {
         <Route path="/change-password" element={<ChangePassword />} />
         <Route path="/messages" element={<Messages />} />
         <Route path="/prediction" element={<RevenuePrediction />} />
+       
         
       </Route>
 
@@ -91,6 +94,7 @@ export default function App() {
         <Route path="messages" element={<TenantContact />} />
         <Route path="profile" element={<TenantProfile />} />
         <Route path="change-password" element={<TenantChangePassword />} />
+        <Route path="rules" element={<TenantRules />} />
       </Route>
 
     </Routes>

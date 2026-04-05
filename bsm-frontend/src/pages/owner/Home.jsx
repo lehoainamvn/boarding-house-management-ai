@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { Pencil, Trash2, Home as HomeIcon, MapPin, ArrowRight, Plus } from "lucide-react";
 
 import CreateHouseModal from "../../components/modals/CreateHouseModal";
+import AddButton from "../../components/AddButton"; // <-- Import nút vừa tách
 
 const API_URL = "http://localhost:5000/api/houses";
 
@@ -53,6 +54,12 @@ export default function Home() {
     }
   }
 
+  // Hàm mở modal tạo mới dùng chung
+  const handleOpenCreateModal = () => {
+    setEditingHouse(null);
+    setShowModal(true);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-[60vh]">
@@ -75,16 +82,8 @@ export default function Home() {
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            setEditingHouse(null);
-            setShowModal(true);
-          }}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm transition-all"
-        >
-          <Plus size={16} />
-          Thêm nhà trọ
-        </button>
+        {/* Gọi nút bấm mới ở Header */}
+        <AddButton onClick={handleOpenCreateModal} />
       </div>
 
       {/* TRẠNG THÁI TRỐNG */}
@@ -99,13 +98,11 @@ export default function Home() {
           <p className="text-slate-500 mb-6 text-sm">
             Tạo nhà trọ đầu tiên của bạn để bắt đầu quản lý các phòng và hóa đơn.
           </p>
-          <button
-            onClick={() => setShowModal(true)}
-            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-sm"
-          >
-            <Plus size={16} />
-            Tạo nhà trọ mới
-          </button>
+          
+          {/* Gọi nút bấm mới ở giữa màn hình trống */}
+          <div className="inline-flex justify-center">
+            <AddButton onClick={handleOpenCreateModal} />
+          </div>
         </div>
       )}
 
@@ -126,7 +123,7 @@ export default function Home() {
                 className="group relative bg-white border border-slate-200/70 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:border-slate-300 transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
-                  {/* NÚT HÀNH ĐỘNG ẨN MỜ (Chỉ hiện rõ khi hover vào Card) */}
+                  {/* NÚT HÀNH ĐỘNG ẨN MỜ */}
                   <div className="absolute right-4 top-4 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => {

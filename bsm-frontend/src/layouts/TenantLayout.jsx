@@ -13,13 +13,14 @@ import {
   MessageSquare, 
   LogOut, 
   User, 
-  Key,
+  Lock,
+  Settings,
   ChevronDown,
   Bell,         
   CheckCheck,  
   X,
   Trash2, 
-  ArrowRight
+  Shield
 } from "lucide-react";
 
 const socket = io("http://localhost:5000");
@@ -190,6 +191,7 @@ export default function TenantLayout() {
     { label: "Hóa đơn", path: "/tenant/invoices", icon: Receipt },
     { label: "Thống kê", path: "/tenant/statistics", icon: BarChart3 },
     { label: "Tin nhắn", path: "/tenant/messages", icon: MessageSquare },
+    { label: "Nội quy", path: "/tenant/rules", icon: Shield },
   ];
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
@@ -200,9 +202,7 @@ export default function TenantLayout() {
       {/* SIDEBAR */}
       <aside className="w-68 bg-white border-r border-slate-100 flex flex-col shadow-sm">
         <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-100">
-          <div className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center">
-             <LayoutDashboard size={18} />
-          </div>
+      
           <span className="font-bold text-slate-800 tracking-tight text-base">Tenant Portal</span>
         </div>
 
@@ -254,7 +254,7 @@ export default function TenantLayout() {
 
           <div className="flex items-center gap-3">
             
-            {/* BỘ THÔNG BÁO DROP-DOWN */}
+            {/* NOTIFICATION DROP-DOWN */}
             <div className="relative" ref={notifyRef}>
               <button
                 onClick={() => setOpenNotify(!openNotify)}
@@ -272,9 +272,9 @@ export default function TenantLayout() {
                 <div className="absolute right-0 mt-3 w-80 bg-white rounded-[1.5rem] shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="px-5 py-4 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
                     <span className="font-extrabold text-slate-800 text-sm">Thông báo</span>
-                    <div className="flex gap-3 items-center">
-                      <span onClick={clearAllNotifications} className="text-[11px] text-rose-500 font-bold cursor-pointer hover:text-rose-700 uppercase tracking-tighter">Xóa tất cả</span>
+                    <div className="flex gap-3">
                       <span onClick={markAsReadAll} className="text-[11px] text-indigo-600 font-bold cursor-pointer hover:text-indigo-700 uppercase tracking-tighter">Đọc tất cả</span>
+                      <span onClick={clearAllNotifications} className="text-[11px] text-rose-600 font-bold cursor-pointer hover:text-rose-700 uppercase tracking-tighter">Xóa tất cả</span>
                     </div>
                   </div>
 
@@ -283,22 +283,23 @@ export default function TenantLayout() {
                       <div className="py-10 text-center text-xs text-slate-400">Không có thông báo mới</div>
                     ) : (
                       notifications.slice(0, 5).map(n => (
-                        <div key={n.id} onClick={() => handleNotificationClick(n)} className={`px-5 py-4 hover:bg-slate-50 transition-colors cursor-pointer group relative ${!n.is_read ? 'bg-indigo-50/20' : ''}`}>
-                          <div className="flex justify-between items-start gap-2 pr-6">
-                            <div>
-                                <p className={`text-[10px] uppercase font-bold mb-0.5 ${!n.is_read ? 'text-indigo-600' : 'text-slate-400'}`}>{n.title || "Thông báo"}</p>
-                                <p className={`text-sm leading-snug ${!n.is_read ? 'font-bold text-slate-800' : 'text-slate-600'}`}>{n.content}</p>
+                        <div key={n.id} onClick={() => handleNotificationClick(n)} className={`px-5 py-4 hover:bg-slate-50 transition-colors cursor-pointer group ${!n.is_read ? 'bg-indigo-50/20' : ''}`}>
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="flex-1">
+                              <p className={`text-[10px] uppercase font-bold mb-0.5 ${!n.is_read ? 'text-indigo-600' : 'text-slate-400'}`}>{n.title || "Thông báo"}</p>
+                              <p className={`text-sm leading-snug ${!n.is_read ? 'font-bold text-slate-800' : 'text-slate-600'}`}>{n.content}</p>
                             </div>
-                            {!n.is_read && <div className="w-2 h-2 rounded-full bg-indigo-500 mt-1 flex-shrink-0 shadow-[0_0_5px_rgba(99,102,241,0.5)]"></div>}
+                            <div className="flex items-center gap-2">
+                              {!n.is_read && <div className="w-2 h-2 rounded-full bg-indigo-500 mt-1 flex-shrink-0 shadow-[0_0_5px_rgba(99,102,241,0.5)]"></div>}
+                              <button 
+                                onClick={(e) => deleteNotification(n.id, e)} 
+                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-100 text-rose-500 rounded transition-all"
+                                title="Xóa thông báo"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           </div>
-                          
-                          <button
-                            onClick={(e) => deleteNotification(n.id, e)}
-                            className="absolute right-3 top-4 p-1 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
-                            title="Xóa thông báo"
-                          >
-                            <Trash2 size={14} />
-                          </button>
                         </div>
                       ))
                     )}
@@ -316,139 +317,166 @@ export default function TenantLayout() {
               )}
             </div>
 
-            {/* USER PROFILE */}
+            {/* USER PROFILE BUTTON */}
             <div className="relative" ref={userMenuRef}>
-              <button
-                onClick={() => setOpenUserMenu(!openUserMenu)}
-                className={`flex items-center gap-3 p-1.5 rounded-xl border border-slate-100 transition-all ${
-                  openUserMenu ? "bg-slate-50 border-slate-200" : "bg-white hover:bg-slate-50"
-                }`}
-              >
-                <div className="text-right text-sm hidden md:block">
+              <button onClick={() => setOpenUserMenu(!openUserMenu)} className={`flex items-center gap-3 p-1.5 rounded-xl border border-slate-100 transition-all ${openUserMenu ? "bg-slate-50 border-slate-200" : "bg-white hover:bg-slate-50"}`}>
+                <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-black text-xs">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="text-left text-sm hidden md:block pr-1">
                   <p className="font-bold text-slate-800 leading-tight">{user.name}</p>
-                  <p className="text-slate-400 text-xs truncate max-w-[150px]">{user.email}</p>
+                  <p className="text-slate-400 text-[10px] truncate max-w-[100px]">{user.email}</p>
                 </div>
-
-                <div className="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm">
-                  {user.name?.charAt(0)?.toUpperCase()}
-                </div>
-
-                <ChevronDown size={14} className={`text-slate-400 hidden md:block transition-transform duration-200 ${openUserMenu ? "rotate-180" : ""}`} />
+                <ChevronDown size={14} className={`text-slate-400 transition-transform ${openUserMenu ? "rotate-180" : ""}`} />
               </button>
-
               {openUserMenu && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-5 duration-200 z-50">
-                  <div className="px-4 py-3 border-b border-slate-100 md:hidden">
-                    <p className="font-bold text-slate-800 text-sm">{user.name}</p>
-                    <p className="text-slate-400 text-xs truncate">{user.email}</p>
-                  </div>
-
-                  <button
-                    onClick={() => { navigate("/tenant/profile"); setOpenUserMenu(false); }}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors"
-                  >
-                    <User size={16} className="text-slate-400" />
-                    Thông tin cá nhân
-                  </button>
-
-                  <button
-                    onClick={() => { navigate("/tenant/change-password"); setOpenUserMenu(false); }}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors"
-                  >
-                    <Key size={16} className="text-slate-400" />
-                    Đổi mật khẩu
-                  </button>
-
-                  <div className="border-t border-slate-100">
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-rose-50 text-rose-600 text-sm font-bold transition-colors"
-                    >
-                      <LogOut size={16} />
-                      Đăng xuất
+                <div className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50">
+                    <button onClick={() => { navigate("/tenant/profile"); setOpenUserMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-slate-50 text-sm text-slate-700 font-semibold transition-colors">
+                      <User size={16} className="text-slate-400" /> Hồ sơ cá nhân
                     </button>
-                  </div>
+                    <button onClick={() => { navigate("/tenant/change-password"); setOpenUserMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-slate-50 text-sm text-slate-700 font-semibold transition-colors">
+                      <Lock size={16} className="text-slate-400" /> Đổi mật khẩu
+                    </button>
+                    <button onClick={() => { navigate("/tenant/settings"); setOpenUserMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-slate-50 text-sm text-slate-700 font-semibold transition-colors">
+                      <Settings size={16} className="text-slate-400" /> Cài đặt chung
+                    </button>
+                    <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-rose-50 text-rose-600 text-sm font-bold border-t border-slate-50">
+                      <LogOut size={16} /> Đăng xuất
+                    </button>
                 </div>
               )}
             </div>
           </div>
-
         </header>
 
-        {/* CONTENT */}
-        <main className="flex-1 p-6 bg-slate-50/50 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 min-h-full max-w-7xl mx-auto">
-            <Outlet />
-          </div>
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50/30">
+          <div className="max-w-7xl mx-auto"><Outlet /></div>
         </main>
-
       </div>
-      
-      {/* MODAL FACEBOOK STYLE (XEM TẤT CẢ) */}
+
+      {/* MODAL THÔNG BÁO CHUẨN PROFESSIONAL (ĐÃ ĐỒNG BỘ) */}
       {showAllModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowAllModal(false)}></div>
+          {/* Lớp phủ mờ (Overlay) */}
+          <div 
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-all duration-300" 
+            onClick={() => setShowAllModal(false)}
+          ></div>
           
-          <div className="relative bg-white w-full max-w-2xl max-h-[85vh] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in duration-300">
-            <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
+          {/* Thân Modal */}
+          <div className="relative bg-white w-full max-w-2xl max-h-[85vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300">
+            
+            {/* Header chuyên nghiệp */}
+            <div className="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-black text-slate-800 tracking-tight">Thông báo</h2>
-                <p className="text-sm text-slate-500 font-medium">Bạn có {unreadCount} thông báo chưa đọc</p>
+                <h2 className="text-xl font-bold text-slate-900 tracking-tight">Thông báo</h2>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  Bạn đang có <span className="text-indigo-600 font-semibold">{unreadCount}</span> thông báo mới
+                </p>
               </div>
-              <div className="flex gap-2 items-center">
-                <button onClick={clearAllNotifications} className="text-xs font-bold text-rose-500 hover:text-rose-700 p-3 transition-all" title="Xóa tất cả thông báo">
-                  Xóa tất cả
+              <div className="flex gap-2">
+                <button 
+                  onClick={markAsReadAll} 
+                  className="p-2.5 hover:bg-slate-100 text-slate-600 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold"
+                  title="Đánh dấu tất cả đã đọc"
+                >
+                  <CheckCheck size={16} />
+                  <span className="hidden sm:inline">Đã đọc tất cả</span>
                 </button>
-                <button onClick={markAsReadAll} className="p-3 hover:bg-indigo-50 text-indigo-600 rounded-2xl transition-all" title="Đánh dấu tất cả đã đọc">
-                  <CheckCheck size={22} />
+                <button 
+                  onClick={clearAllNotifications} 
+                  className="p-2.5 hover:bg-rose-50 text-rose-600 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold"
+                  title="Xóa toàn bộ thông báo"
+                >
+                  <Trash2 size={16} />
+                  <span className="hidden sm:inline">Xóa tất cả</span>
                 </button>
-                <button onClick={() => setShowAllModal(false)} className="p-3 hover:bg-slate-100 text-slate-400 rounded-2xl transition-all">
-                  <X size={22} />
+                <button 
+                  onClick={() => setShowAllModal(false)} 
+                  className="p-2.5 hover:bg-slate-100 text-slate-500 rounded-xl transition-all"
+                >
+                  <X size={18} />
                 </button>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50/30">
+            {/* Nội dung danh sách thông báo */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50/50">
               {notifications.length === 0 ? (
-                <div className="py-20 text-center text-slate-400 font-medium">Hộp thư thông báo trống.</div>
+                <div className="py-20 flex flex-col items-center justify-center text-slate-400">
+                  <Bell size={40} className="stroke-slate-300 mb-3" />
+                  <p className="font-medium text-sm">Hộp thư thông báo trống.</p>
+                </div>
               ) : (
-                notifications.map(n => (
-                  <div 
-                    key={n.id}
-                    onClick={() => handleNotificationClick(n)}
-                    className={`flex items-start gap-4 p-5 rounded-[1.5rem] transition-all cursor-pointer group shadow-sm relative ${!n.is_read ? 'bg-white border-l-4 border-l-indigo-500 hover:bg-indigo-50/30' : 'bg-white/60 hover:bg-white border-l-4 border-l-transparent'}`}
-                  >
-                    <div className={`w-12 h-12 rounded-2xl flex-shrink-0 flex items-center justify-center ${!n.is_read ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                      {n.title?.includes("hóa đơn") ? <Receipt size={20} /> : <MessageSquare size={20} />}
-                    </div>
-                    
-                    <div className="flex-1 pr-6">
-                      <div className="flex justify-between items-start">
-                        <h4 className={`text-[15px] ${!n.is_read ? 'font-extrabold text-slate-900' : 'font-semibold text-slate-600'}`}>{n.title}</h4>
-                        {!n.is_read && <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse"></span>}
-                      </div>
-                      <p className={`text-sm mt-1 line-clamp-2 ${!n.is_read ? 'text-slate-700' : 'text-slate-500'}`}>{n.content}</p>
-                      
-                      {/* 🔥 ĐÃ FIX 2: Thêm check Valid Date để phòng lỗi hiển thị */}
-                      <span className="text-[11px] font-bold text-slate-400 mt-3 block uppercase tracking-widest">
-                        {n.created_at ? new Date(n.created_at).toLocaleString('vi-VN') : 'Vừa xong'}
-                      </span>
-                    </div>
-
-                    <button
-                      onClick={(e) => deleteNotification(n.id, e)}
-                      className="absolute right-4 top-5 p-1.5 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
-                      title="Xóa thông báo"
+                notifications.map(n => {
+                  const isRead = n.is_read;
+                  const isInvoice = n.title?.toLowerCase().includes("hóa đơn");
+                  
+                  return (
+                    <div 
+                      key={n.id}
+                      onClick={() => handleNotificationClick(n)}
+                      className={`flex items-start gap-4 p-4 rounded-2xl transition-all cursor-pointer group border ${
+                        !isRead 
+                          ? 'bg-white border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-200' 
+                          : 'bg-white/70 border-transparent hover:bg-white hover:border-slate-100'
+                      }`}
                     >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))
+                      {/* Icon được bọc màu Pastel */}
+                      <div className={`w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center ${
+                        !isRead 
+                          ? (isInvoice ? 'bg-amber-50 text-amber-600' : 'bg-indigo-50 text-indigo-600')
+                          : 'bg-slate-100 text-slate-400'
+                      }`}>
+                        {isInvoice ? <Receipt size={18} /> : <MessageSquare size={18} />}
+                      </div>
+                      
+                      {/* Text Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start gap-4">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className={`text-sm ${!isRead ? 'font-bold text-slate-900' : 'font-medium text-slate-600'}`}>
+                                {n.title || "Thông báo"}
+                              </h4>
+                              {!isRead && (
+                                <span className="px-1.5 py-0.5 bg-indigo-600 text-white text-[10px] font-bold rounded-full">MỚI</span>
+                              )}
+                            </div>
+                            <p className={`text-sm mt-1 line-clamp-2 leading-relaxed ${!isRead ? 'text-slate-700' : 'text-slate-500'}`}>
+                              {n.content}
+                            </p>
+                          </div>
+                          
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <span className="text-xs font-medium text-slate-400">
+                              {n.created_at ? new Date(n.created_at).toLocaleDateString('vi-VN', {hour: '2-digit', minute:'2-digit'}) : 'Vừa xong'}
+                            </span>
+                            <button 
+                              onClick={(e) => deleteNotification(n.id, e)} 
+                              className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-rose-100 text-rose-500 rounded-lg transition-all ml-1"
+                              title="Xóa thông báo"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
             
-            <div className="p-4 bg-white border-t border-slate-100 text-center">
-                <button onClick={() => setShowAllModal(false)} className="px-8 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all">Đóng</button>
+            {/* Footer chân modal */}
+            <div className="px-6 py-4 bg-white border-t border-slate-100 flex justify-between items-center">
+              <span className="text-xs text-slate-400 font-medium">Auto-refresh real-time</span>
+              <button 
+                onClick={() => setShowAllModal(false)} 
+                className="px-5 py-2 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 hover:shadow-lg transition-all"
+              >
+                Đóng
+              </button>
             </div>
           </div>
         </div>

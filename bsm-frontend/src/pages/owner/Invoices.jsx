@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { getInvoicesByMonth } from "../../api/invoice.api";
 import { getHouses } from "../../api/house.api";
-import { FileText, Send, Copy, X, Search, Calendar, Home, CreditCard } from "lucide-react";
+import { FileText, Send, Copy, X } from "lucide-react";
+import InvoiceFilter from "../../components/Filter"; // <-- Import component vừa tách
 
 export default function Invoices() {
   const navigate = useNavigate();
@@ -13,16 +14,13 @@ export default function Invoices() {
   const [year, setYear] = useState(
     Number(localStorage.getItem("invoice_year")) || currentYear
   );
-
   const [month, setMonth] = useState(
     localStorage.getItem("invoice_month") ||
       String(new Date().getMonth() + 1).padStart(2, "0")
   );
-
   const [houseId, setHouseId] = useState(
     localStorage.getItem("invoice_house") || ""
   );
-
   const [statusFilter, setStatusFilter] = useState(
     localStorage.getItem("invoice_status") || "ALL"
   );
@@ -34,6 +32,7 @@ export default function Invoices() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [searched, setSearched] = useState(false);
   const [zaloInvoice, setZaloInvoice] = useState(null);
 
   /* ================= SAVE FILTER ================= */
@@ -54,25 +53,23 @@ export default function Invoices() {
     try {
       setLoading(true);
       setError("");
-
-      const monthParam = `${year}-${month}`;
-
-      const data = await getInvoicesByMonth(
-        monthParam,
-        houseId
-      );
-
+      
+      // Tạo month param - nếu rỗng thì không gửi
+      const monthParam = month && month.trim() ? `${year}-${month}` : "";
+      const houseParam = houseId && houseId.toString().trim() ? Number(houseId) : null;
+      
+     
+      
+      const data = await getInvoicesByMonth(monthParam, houseParam);
       setInvoices(data);
+      setSearched(true);
     } catch (err) {
+    
       setError(err.message || "Không tải được hóa đơn");
     } finally {
       setLoading(false);
     }
   }
-
-  useEffect(() => {
-    handleFetch();
-  }, []);
 
   /* ================= STATUS FILTER ================= */
   useEffect(() => {
@@ -95,19 +92,13 @@ Người thuê: ${invoice.tenant_name}
 💰 Tổng tiền: ${invoice.total_amount.toLocaleString("vi-VN")} đ
 📅 Ngày tạo: ${new Date(invoice.created_at).toLocaleDateString()}
 
-Trạng thái: ${
-      invoice.status === "PAID"
-        ? "Đã thanh toán"
-        : "Chưa thanh toán"
-    }
+Trạng thái: ${invoice.status === "PAID" ? "Đã thanh toán" : "Chưa thanh toán"}
 
 Vui lòng thanh toán trước ngày 10.`;
   }
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(
-      buildMessage(zaloInvoice)
-    );
+    await navigator.clipboard.writeText(buildMessage(zaloInvoice));
     toast.success("Đã copy nội dung hóa đơn");
   }
 
@@ -116,15 +107,8 @@ Vui lòng thanh toán trước ngày 10.`;
       toast.error("Khách thuê chưa có số điện thoại");
       return;
     }
-    window.open(
-      `https://zalo.me/${zaloInvoice.tenant_phone}`,
-      "_blank"
-    );
+    window.open(`https://zalo.me/${zaloInvoice.tenant_phone}`, "_blank");
   }
-
-  const months = Array.from({ length: 12 }, (_, i) =>
-    String(i + 1).padStart(2, "0")
-  );
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-12 space-y-8">
@@ -132,96 +116,22 @@ Vui lòng thanh toán trước ngày 10.`;
       {/* HEADER ĐỒNG BỘ */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">
-            Quản lý hóa đơn
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-800">Quản lý hóa đơn</h1>
           <p className="text-sm text-slate-500 mt-0.5">
             Xem, đối soát trạng thái và gửi hóa đơn cho khách thuê
           </p>
         </div>
       </div>
 
-      {/* ================= BỘ LỌC CHUYÊN NGHIỆP ================= */}
-      <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm p-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 items-end">
-          
-          {/* NĂM */}
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase">Năm</label>
-            <div className="relative mt-1.5">
-              <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <select
-                value={year}
-                onChange={(e) => setYear(+e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 bg-white"
-              >
-                {Array.from({ length: 6 }, (_, i) => currentYear - 3 + i)
-                  .map((y) => (
-                    <option key={y}>{y}</option>
-                  ))}
-              </select>
-            </div>
-          </div>
-
-          {/* THÁNG */}
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase">Tháng</label>
-            <select
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-              className="w-full mt-1.5 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 bg-white"
-            >
-              {months.map((m) => (
-                <option key={m} value={m}>Tháng {m}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* NHÀ */}
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase">Khu vực / Nhà</label>
-            <div className="relative mt-1.5">
-              <Home size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <select
-                value={houseId}
-                onChange={(e) => setHouseId(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 bg-white"
-              >
-                <option value="">Tất cả nhà</option>
-                {houses.map((h) => (
-                  <option key={h.id} value={h.id}>{h.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* TRẠNG THÁI */}
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase">Trạng thái</label>
-            <div className="relative mt-1.5">
-              <CreditCard size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 bg-white"
-              >
-                <option value="ALL">Tất cả</option>
-                <option value="UNPAID">Chưa thanh toán</option>
-                <option value="PAID">Đã thanh toán</option>
-              </select>
-            </div>
-          </div>
-
-          {/* NÚT LỌC */}
-          <button
-            onClick={handleFetch}
-            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition shadow-sm"
-          >
-            <Search size={16} />
-            Lọc kết quả
-          </button>
-        </div>
-      </div>
+      {/* ================= BỘ LỌC ĐÃ TÁCH ================= */}
+      <InvoiceFilter 
+        year={year} setYear={setYear}
+        month={month} setMonth={setMonth}
+        houseId={houseId} setHouseId={setHouseId}
+        statusFilter={statusFilter} setStatusFilter={setStatusFilter}
+        houses={houses}
+        onFetch={handleFetch}
+      />
 
       {error && (
         <div className="bg-rose-50 border border-rose-100 text-rose-600 p-4 rounded-xl text-sm font-medium">
@@ -235,7 +145,7 @@ Vui lòng thanh toán trước ngày 10.`;
           <div className="flex justify-center items-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-4 border-slate-200 border-t-indigo-600" />
           </div>
-        ) : filteredInvoices.length > 0 ? (
+        ) : searched && filteredInvoices.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 border-b border-slate-100 text-xs text-slate-500 uppercase font-semibold">
@@ -260,11 +170,7 @@ Vui lòng thanh toán trước ngày 10.`;
                     <td className="px-6 py-4 text-center">
                       <span
                         className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold
-                        ${
-                          i.status === "PAID"
-                            ? "bg-emerald-50 text-emerald-600"
-                            : "bg-amber-50 text-amber-600"
-                        }`}
+                        ${i.status === "PAID" ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}
                       >
                         {i.status === "PAID" ? "Đã trả" : "Chưa trả"}
                       </span>
@@ -294,12 +200,18 @@ Vui lòng thanh toán trước ngày 10.`;
               </tbody>
             </table>
           </div>
-        ) : (
+        ) : searched && filteredInvoices.length === 0 ? (
           <div className="text-center py-16 text-slate-400">
             <FileText size={48} className="mx-auto mb-4 text-slate-200" />
             <p className="text-sm font-medium">Không tìm thấy hóa đơn nào</p>
           </div>
-        )}
+        ) : !searched ? (
+          <div className="text-center py-16 text-slate-400">
+            <FileText size={48} className="mx-auto mb-4 text-slate-200" />
+            <p className="text-sm font-medium">Chưa có dữ liệu</p>
+            <p className="text-xs text-slate-400 mt-1">Nhấn nút "Tìm kiếm" để xem hóa đơn</p>
+          </div>
+        ) : null}
       </div>
 
       {/* ================= MODAL GIẢ LẬP KHUNG CHAT ZALO ================= */}

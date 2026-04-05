@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   getRevenue,
   getRevenueSummary,
@@ -20,7 +20,7 @@ import {
 } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
 
-import { Download, TrendingUp, Home, Calendar, Filter, FileText, Users, DoorOpen } from "lucide-react";
+import { Download, TrendingUp, Home, Calendar, Users, DoorOpen, ChevronDown, Moon, FileText, ArrowUpRight } from "lucide-react";
 
 ChartJS.register(
   CategoryScale,
@@ -31,10 +31,78 @@ ChartJS.register(
   Legend
 );
 
-/* ================= MINI DONUT (ĐO LƯỜNG TỶ LỆ) ================= */
+// ==========================================
+// COMPONENT: Custom Dropdown đồng bộ
+// ==========================================
+function CustomDropdown({ label, icon: Icon, options, value, onChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedLabel = options.find((opt) => opt.value === value)?.label || options[0]?.label;
+
+  return (
+    <div className="w-full" ref={dropdownRef}>
+      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+        {label}
+      </label>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className={`w-full h-11 flex items-center justify-between pl-10 pr-3.5 text-sm font-semibold text-slate-700 bg-slate-50/70 border rounded-2xl transition-all ${
+            isOpen 
+              ? "border-indigo-500 bg-white ring-4 ring-indigo-500/5" 
+              : "border-slate-200/70 hover:border-slate-300 hover:bg-slate-50 bg-slate-50/70"
+          }`}
+        >
+          <Icon size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${isOpen ? "text-indigo-600" : "text-slate-400"}`} />
+          <span className="truncate pr-2">{selectedLabel}</span>
+          <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 ${isOpen ? "rotate-180 text-indigo-600" : ""}`} />
+        </button>
+
+        {isOpen && (
+          <div className="absolute z-50 top-[calc(100%+6px)] left-0 w-full bg-white border border-slate-100 rounded-2xl shadow-xl shadow-slate-200/40 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+            <ul className="max-h-60 overflow-y-auto p-1.5 custom-scrollbar">
+              {options.map((opt) => (
+                <li
+                  key={opt.value}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                  }}
+                  className={`px-3.5 py-2.5 text-sm rounded-xl cursor-pointer transition-colors mb-0.5 last:mb-0 ${
+                    value === opt.value
+                      ? "bg-indigo-50 text-indigo-700 font-bold"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium"
+                  }`}
+                >
+                  {opt.label}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// COMPONENT: Mini Donut
+// ==========================================
 function MiniDonut({ value, total, color }) {
   return (
-    <div className="h-20 w-20 mx-auto relative flex items-center justify-center">
+    <div className="h-14 w-14 relative flex items-center justify-center">
       <Doughnut
         data={{
           datasets: [
@@ -42,7 +110,7 @@ function MiniDonut({ value, total, color }) {
               data: [value, Math.max(total - value, 0)],
               backgroundColor: [color, "#f1f5f9"],
               borderWidth: 0,
-              borderRadius: 4,
+              borderRadius: 3,
             }
           ]
         }}
@@ -52,39 +120,41 @@ function MiniDonut({ value, total, color }) {
           maintainAspectRatio: false
         }}
       />
-      <span className="absolute text-xs font-bold" style={{ color }}>
+      <span className="absolute text-[11px] font-bold" style={{ color }}>
         {total > 0 ? Math.round((value / total) * 100) : 0}%
       </span>
     </div>
   );
 }
 
-/* ================= THẺ KPI NÂNG CẤP ================= */
+// ==========================================
+// COMPONENT: Thẻ KPI
+// ==========================================
 function StatCard({ title, value, total, color, icon: Icon, suffix = "" }) {
   return (
-    <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm hover:shadow-md transition-all p-5 flex flex-col justify-between h-full">
-      <div className="flex justify-between items-start mb-2">
+    <div className="bg-white border border-slate-200/60 rounded-[1.5rem] shadow-sm hover:shadow-md transition-all p-5 flex items-center justify-between group">
+      <div className="flex items-center gap-4">
+        <div className="p-3 rounded-2xl transition-colors" style={{ backgroundColor: `${color}15`, color: color }}>
+          <Icon size={20} />
+        </div>
         <div>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{title}</p>
-          <p className="text-2xl font-extrabold text-slate-800 mt-1">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">{title}</p>
+          <p className="text-2xl font-extrabold text-slate-800">
             {value.toLocaleString("vi-VN")}{suffix}
           </p>
         </div>
-        {Icon && (
-          <div className="p-2 rounded-xl" style={{ backgroundColor: `${color}15`, color: color }}>
-            <Icon size={18} />
-          </div>
-        )}
       </div>
       
-      <div className="pt-3 border-t border-slate-50 mt-auto">
+      <div className="transition-transform group-hover:scale-105">
         <MiniDonut value={value} total={total} color={color} />
       </div>
     </div>
   );
 }
 
-/* ================= MAIN COMPONENT ================= */
+// ==========================================
+// COMPONENT CHÍNH: Revenue
+// ==========================================
 export default function Revenue() {
   const currentYear = new Date().getFullYear();
 
@@ -103,7 +173,6 @@ export default function Revenue() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  /* ===== LOAD HOUSES ===== */
   useEffect(() => {
     getHouses().then(setHouses).catch(e => setError(e.message));
   }, []);
@@ -150,7 +219,6 @@ export default function Revenue() {
     }
   }
 
-  /* ===== CHART ===== */
   const months = Array.from({ length: 12 }, (_, i) =>
     String(i + 1).padStart(2, "0")
   );
@@ -163,15 +231,21 @@ export default function Revenue() {
   const totalYearRevenue = chartValues.reduce((s, v) => s + v, 0);
 
   const chartData = {
-    labels: months.map((m) => `Tháng ${m}`),
+    labels: months.map((m) => `Thg ${m}`),
     datasets: [
       {
-        label: "Doanh thu (đ)",
+        label: "Doanh thu",
         data: chartValues,
-        backgroundColor: "rgba(99, 102, 241, 0.85)",
-        hoverBackgroundColor: "rgba(99, 102, 241, 1)",
-        borderRadius: 6,
-        barThickness: 28,
+        backgroundColor: (context) => {
+          const ctx = context.chart.ctx;
+          const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+          gradient.addColorStop(0, "rgba(79, 70, 229, 0.9)");
+          gradient.addColorStop(1, "rgba(79, 70, 229, 0.1)");
+          return gradient;
+        },
+        hoverBackgroundColor: "rgba(79, 70, 229, 1)",
+        borderRadius: 8,
+        barThickness: 24,
       }
     ]
   };
@@ -184,26 +258,30 @@ export default function Revenue() {
       tooltip: {
         backgroundColor: "#1e293b",
         padding: 12,
-        titleFont: { size: 13, weight: "bold" },
-        bodyFont: { size: 12 },
-        cornerRadius: 8,
+        titleFont: { size: 12, weight: "bold", family: "sans-serif" },
+        bodyFont: { size: 12, family: "sans-serif" },
+        cornerRadius: 12,
         displayColors: false,
+        callbacks: {
+          label: function(context) {
+            return `Doanh thu: ${context.parsed.y.toLocaleString("vi-VN")} đ`;
+          }
+        }
       }
     },
     scales: {
       y: {
         beginAtZero: true,
         ticks: { color: "#94a3b8", font: { size: 11 } },
-        grid: { color: "#f1f5f9" }
+        grid: { color: "#f1f5f9", drawBorder: false }
       },
       x: {
-        ticks: { color: "#64748b", font: { size: 11, weight: "500" } },
+        ticks: { color: "#64748b", font: { size: 11, weight: "600" } },
         grid: { display: false }
       }
     }
   };
 
-  /* ===== EXPORT EXCEL ===== */
   async function exportExcel() {
     if (!month) return alert("Vui lòng chọn tháng để xuất file cụ thể!");
 
@@ -235,96 +313,94 @@ export default function Revenue() {
     saveAs(new Blob([buffer]), `DoanhThu_${year}_${month}.xlsx`);
   }
 
+  const yearOptions = Array.from({ length: 6 }, (_, i) => {
+    const y = currentYear - 3 + i;
+    return { value: y, label: `Năm ${y}` };
+  });
+
+  const monthOptions = [
+    { value: "", label: "Tất cả tháng" },
+    ...months.map((m) => ({ value: m, label: `Tháng ${m}` }))
+  ];
+
+  const houseOptions = [
+    { value: "", label: "Tất cả khu nhà" },
+    ...houses.map((h) => ({ value: h.id, label: h.name }))
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-50/50">
-      <div className="max-w-7xl mx-auto px-6 py-10 space-y-8">
+    <div className="min-h-screen bg-[#f8fafc] p-6 md:p-10 font-sans">
+      <div className="max-w-7xl mx-auto space-y-8">
 
         {/* HEADER */}
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">
-            Thống kê doanh thu
-          </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Báo cáo tổng quan hoạt động kinh doanh và dòng tiền
-          </p>
-        </div>
+        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Thống kê & Doanh thu</h1>
+            <p className="text-sm font-medium text-slate-500 mt-0.5">
+              Báo cáo tổng quan hoạt động kinh doanh và dòng tiền
+            </p>
+          </div>
 
-        {/* FILTER + OPTIONS */}
-        <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm p-6 space-y-5">
-          <div className="flex flex-wrap gap-4 items-center">
-            {/* NĂM */}
-            <div className="relative min-w-[120px]">
-              <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <select 
-                value={year} 
-                onChange={(e) => setYear(+e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 bg-white font-medium text-slate-700 shadow-sm transition-all"
-              >
-                {Array.from({ length: 6 }, (_, i) => currentYear - 3 + i)
-                  .map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-            </div>
-
-            {/* NHÀ */}
-            <div className="relative min-w-[180px]">
-              <Home size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <select 
-                value={houseId} 
-                onChange={(e) => setHouseId(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 bg-white font-medium text-slate-700 shadow-sm transition-all"
-              >
-                <option value="">Tất cả nhà</option>
-                {houses.map(h => (
-                  <option key={h.id} value={h.id}>{h.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* THÁNG */}
-            <div className="relative min-w-[140px]">
-              <Filter size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <select 
-                value={month} 
-                onChange={(e) => setMonth(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 bg-white font-medium text-slate-700 shadow-sm transition-all"
-              >
-                <option value="">Tất cả tháng</option>
-                {months.map(m => (
-                  <option key={m} value={m}>Tháng {m}</option>
-                ))}
-              </select>
-            </div>
-
+          <div className="flex items-center gap-3">
             <button
               onClick={exportExcel}
               disabled={!month}
-              className={`ml-auto flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm ${
+              className={`h-11 flex items-center justify-center gap-2 px-5 rounded-2xl font-bold text-sm transition-all shadow-sm ${
                 !month 
-                ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
-                : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  ? "bg-white text-slate-300 cursor-not-allowed border border-slate-100" 
+                  : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/10 hover:shadow-emerald-500/20"
               }`}
             >
-              <Download size={16} />
+              <Download size={16} strokeWidth={2.5} />
               Xuất Excel
             </button>
           </div>
+        </div>
 
-          {/* CHECKBOX OPTIONS */}
-          <div className="flex flex-wrap gap-4 text-sm">
-            <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-all ${showEmptyRooms ? "bg-indigo-50 border-indigo-200 text-indigo-700 font-medium" : "bg-white border-slate-200 text-slate-600"}`}>
+        {/* FILTER BAR */}
+        <div className="bg-white border border-slate-200/60 rounded-[2rem] shadow-sm p-6 space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 items-end">
+            
+            <CustomDropdown 
+              label="Năm phân tích" 
+              icon={Calendar} 
+              value={year} 
+              onChange={(val) => setYear(+val)} 
+              options={yearOptions} 
+            />
+
+            <CustomDropdown 
+              label="Khu vực / Nhà" 
+              icon={Home} 
+              value={houseId} 
+              onChange={setHouseId} 
+              options={houseOptions} 
+            />
+
+            <CustomDropdown 
+              label="Tháng" 
+              icon={Moon} 
+              value={month} 
+              onChange={setMonth} 
+              options={monthOptions} 
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-3 text-sm pt-1">
+            <label className={`flex items-center gap-2.5 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all ${showEmptyRooms ? "bg-indigo-50/70 border-indigo-200 text-indigo-700 font-bold" : "bg-slate-50 border-transparent text-slate-600 hover:border-slate-200"}`}>
               <input
                 type="checkbox"
-                className="accent-indigo-600 h-4 w-4"
+                className="accent-indigo-600 h-4 w-4 rounded"
                 checked={showEmptyRooms}
                 onChange={() => setShowEmptyRooms(!showEmptyRooms)}
               />
               Bật xem phòng trống
             </label>
 
-            <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-all ${showUnpaidInvoices ? "bg-indigo-50 border-indigo-200 text-indigo-700 font-medium" : "bg-white border-slate-200 text-slate-600"}`}>
+            <label className={`flex items-center gap-2.5 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all ${showUnpaidInvoices ? "bg-indigo-50/70 border-indigo-200 text-indigo-700 font-bold" : "bg-slate-50 border-transparent text-slate-600 hover:border-slate-200"}`}>
               <input
                 type="checkbox"
-                className="accent-indigo-600 h-4 w-4"
+                className="accent-indigo-600 h-4 w-4 rounded"
                 checked={showUnpaidInvoices}
                 onChange={() => setShowUnpaidInvoices(!showUnpaidInvoices)}
               />
@@ -333,9 +409,9 @@ export default function Revenue() {
           </div>
         </div>
 
-        {/* KPI GRID AUTO-RESPONSIVE */}
+        {/* KPI GRID */}
         {summary && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
 
             <StatCard
               title="Khách thuê"
@@ -381,19 +457,21 @@ export default function Revenue() {
               />
             )}
 
-            {/* THẺ TỔNG DOANH THU TO NHẤT */}
-            <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 border border-indigo-600 rounded-2xl shadow-sm p-6 flex flex-col justify-between text-white lg:col-span-2 xl:col-span-1 h-full min-h-[160px]">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <TrendingUp size={16} className="text-indigo-100" />
-                  <p className="text-xs font-bold text-indigo-100 uppercase tracking-wider">Doanh thu năm {year}</p>
+            {/* THẺ TỔNG DOANH THU */}
+            <div className="bg-slate-900 border border-slate-800 rounded-[1.5rem] shadow-sm p-5 flex flex-col justify-between text-white lg:col-span-2 xl:col-span-1 h-full min-h-[120px] group hover:bg-slate-800 transition-colors">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Tổng doanh thu ({year})</p>
+                  <p className="text-2xl font-extrabold text-white mt-1">
+                    {totalYearRevenue.toLocaleString("vi-VN")} đ
+                  </p>
                 </div>
-                <p className="text-3xl font-extrabold mt-2">
-                  {totalYearRevenue.toLocaleString("vi-VN")} đ
-                </p>
+                <div className="p-2.5 bg-slate-800 rounded-xl text-emerald-400 group-hover:bg-slate-700 transition-colors">
+                  <ArrowUpRight size={18} />
+                </div>
               </div>
-              <p className="text-xs text-indigo-100/80 mt-auto">
-                Dữ liệu được cập nhật theo thời gian thực
+              <p className="text-[11px] text-slate-500 font-medium">
+                Dòng tiền thực tế phát sinh trong năm
               </p>
             </div>
           </div>
@@ -402,39 +480,41 @@ export default function Revenue() {
         {/* CHART & TABLE GRID */}
         <div className="grid lg:grid-cols-3 gap-6">
           
-          {/* ĐỒ THỊ DOANH THU (CHIẾM 2 PHẦN) */}
-          <div className="lg:col-span-2 bg-white border border-slate-200/60 rounded-2xl shadow-sm p-6">
-            <div className="mb-4">
-              <h3 className="text-base font-bold text-slate-800">Biểu đồ doanh thu</h3>
-              <p className="text-xs text-slate-500">Phân bổ dòng tiền theo từng tháng</p>
+          {/* ĐỒ THỊ DOANH THU */}
+          <div className="lg:col-span-2 bg-white border border-slate-200/60 rounded-[2rem] shadow-sm p-6 hover:shadow-md transition-shadow">
+            <div className="mb-6">
+              <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <TrendingUp size={16} className="text-indigo-600" /> Xu hướng doanh thu
+              </h3>
+              <p className="text-xs font-medium text-slate-400 mt-0.5">Biểu đồ phân bổ dòng tiền theo từng tháng</p>
             </div>
             <div className="h-80">
               <Bar data={chartData} options={chartOptions} />
             </div>
           </div>
 
-          {/* BẢNG DỮ LIỆU (CHIẾM 1 PHẦN) */}
-          <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden flex flex-col justify-between">
-            <div className="p-5 border-b border-slate-100">
+          {/* BẢNG DỮ LIỆU */}
+          <div className="bg-white border border-slate-200/60 rounded-[2rem] shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+            <div className="p-6 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-800">Chi tiết định kỳ</h3>
-              <p className="text-xs text-slate-500">Bảng kê khai số lượng và số tiền</p>
+              <p className="text-xs font-medium text-slate-500 mt-0.5">Bảng kê khai số lượng và số tiền</p>
             </div>
 
-            <div className="overflow-auto max-h-80 flex-1">
+            <div className="overflow-auto max-h-[340px] flex-1 custom-scrollbar">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-slate-50/80 border-b border-slate-100">
-                    <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Thời gian</th>
-                    <th className="py-3 px-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Số HĐ</th>
-                    <th className="py-3 px-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Doanh thu</th>
+                  <tr className="bg-slate-50/70 border-b border-slate-100">
+                    <th className="py-3 px-5 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Thời gian</th>
+                    <th className="py-3 px-3 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wider">Số HĐ</th>
+                    <th className="py-3 px-5 text-right text-[11px] font-bold text-slate-400 uppercase tracking-wider">Doanh thu</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-50">
                   {tableData.map((i) => (
                     <tr key={i.period} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="py-3 px-4 font-medium text-slate-700">Tháng {i.period}</td>
-                      <td className="py-3 px-4 text-center text-slate-600 font-medium">{i.total_invoices}</td>
-                      <td className="py-3 px-4 text-right font-bold text-indigo-600">
+                      <td className="py-3.5 px-5 font-semibold text-slate-700">Tháng {i.period}</td>
+                      <td className="py-3.5 px-3 text-center text-slate-500 font-medium">{i.total_invoices}</td>
+                      <td className="py-3.5 px-5 text-right font-bold text-indigo-600">
                         {Number(i.total_revenue).toLocaleString("vi-VN")} đ
                       </td>
                     </tr>
@@ -443,9 +523,9 @@ export default function Revenue() {
               </table>
               
               {!loading && tableData.length === 0 && (
-                <div className="py-16 text-center text-slate-500">
-                  <TrendingUp size={36} className="mx-auto mb-3 text-slate-300" />
-                  <p className="text-sm font-medium">Không có dữ liệu</p>
+                <div className="py-20 text-center text-slate-400">
+                  <FileText size={32} className="mx-auto mb-3 text-slate-200" />
+                  <p className="text-sm font-medium">Không có dữ liệu hiển thị</p>
                 </div>
               )}
             </div>

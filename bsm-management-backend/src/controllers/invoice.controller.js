@@ -2,6 +2,8 @@ import {
   createInvoiceService,
   getInvoicesByMonthService,
   getInvoiceDetailService,
+  getInvoiceByRoomAndMonthService,
+  updateInvoiceService,
   markInvoicePaidService,
   getTenantInvoicesService,
   getTenantLatestInvoiceService,
@@ -59,19 +61,43 @@ export async function getInvoicesByMonth(req, res) {
     const ownerId = req.user.id;
     const { month, houseId } = req.query;
 
-    if (!month) {
-      return res.status(400).json({ message: "Thiếu month" });
-    }
-
     const data = await getInvoicesByMonthService(
       ownerId,
-      month,
+      month ? month : null,
       houseId ? Number(houseId) : null
     );
 
     res.json(data);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    res.status(400).json({ message: err.message || "Lỗi lấy hóa đơn" });
+  }
+}
+
+export async function getInvoiceByRoomAndMonth(req, res) {
+  try {
+    const roomId = Number(req.params.roomId);
+    const { month } = req.query;
+
+    if (!month) {
+      return res.status(400).json({ message: "Thiếu thông tin tháng" });
+    }
+
+    const invoice = await getInvoiceByRoomAndMonthService(roomId, month);
+    res.json(invoice);
+  } catch (err) {
+    res.status(400).json({ message: err.message || "Lỗi tải hóa đơn" });
+  }
+}
+
+export async function updateInvoice(req, res) {
+  try {
+    const invoiceId = Number(req.params.id);
+    const data = req.body;
+
+    await updateInvoiceService(invoiceId, data);
+    res.json({ message: "Cập nhật hóa đơn thành công" });
+  } catch (err) {
+    res.status(400).json({ message: err.message || "Lỗi cập nhật hóa đơn" });
   }
 }
 

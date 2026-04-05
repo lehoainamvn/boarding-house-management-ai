@@ -1,7 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Zap, Droplet, Home, Wrench, Save, ArrowLeft, Calculator } from "lucide-react";
 import toast from "react-hot-toast";
+import { getInvoiceByRoomAndMonth, updateInvoice } from "../../api/invoice.api";
+import { getMeterReadingByRoomAndMonth } from "../../api/meter.api";
 
 export default function RoomBill() {
   const { state } = useLocation();
@@ -24,8 +26,52 @@ export default function RoomBill() {
   const [waterType, setWaterType] = useState(room?.water_type || "METER");
   const [peopleCount, setPeopleCount] = useState(room?.people_count || 1);
   const [serviceFee, setServiceFee] = useState(0);
-
+  const [existingInvoice, setExistingInvoice] = useState(null);
+  const [readingLoaded, setReadingLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    async function loadExistingInvoice() {
+      if (!room) return;
+
+      const month = monthStr;
+      try {
+        const invoice = await getInvoiceByRoomAndMonth(room.id, month);
+        if (invoice) {
+          setExistingInvoice(invoice);
+          // Pre-fill form with existing invoice data
+          setOldElectric(invoice.electric_old || 0);
+          setNewElectric(invoice.electric_new || 0);
+          setOldWater(invoice.water_old || 0);
+          setNewWater(invoice.water_new || 0);
+          setServiceFee(invoice.service_fee || 0);
+          setPeopleCount(invoice.people_count || room?.people_count || 1);
+          setWaterType(invoice.water_type || room?.water_type || "METER");
+        }
+      } catch (err) {
+        // Nếu không có hóa đơn thì không làm gì, chỉ sửa khi thực sự có lỗi khác
+        if (err.message !== "Lỗi tải hóa đơn") {
+          toast.error(err.message);
+        }
+      }
+
+      try {
+        const reading = await getMeterReadingByRoomAndMonth(room.id, month);
+        if (reading) {
+          setOldElectric(reading.electric_old);
+          setNewElectric(reading.electric_new);
+          setOldWater(reading.water_old);
+          setNewWater(reading.water_new);
+        }
+      } catch (err) {
+        // không cần hiển thị lỗi nếu không có chỉ số cũ
+      } finally {
+        setReadingLoaded(true);
+      }
+    }
+
+    loadExistingInvoice();
+  }, [room, monthStr]);
 
   if (!room) {
     return (
@@ -70,38 +116,44 @@ export default function RoomBill() {
   async function handleSaveInvoice() {
     try {
       setSaving(true);
-      const token = localStorage.getItem("token");
+      const payload = {
+        room_id: room.id,
+        month: monthStr,
+        electric_old: oldElectric,
+        electric_new: newElectric,
+        water_old: oldWater,
+        water_new: newWater,
+        room_price: room.room_price,
+        electric_used: electricUsed,
+        water_used: waterUsed,
+        electric_cost: electricCost,
+        water_cost: waterCost,
+        total_amount: total,
+      };
 
-      const res = await fetch("http://localhost:5000/api/invoices", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          room_id: room.id,
-          month: monthStr,
+      if (existingInvoice?.id) {
+        await updateInvoice(existingInvoice.id, payload);
+        toast.success("Đã cập nhật hóa đơn thành công");
+      } else {
+        const token = localStorage.getItem("token");
 
-          electric_old: oldElectric,
-          electric_new: newElectric,
-          water_old: oldWater,
-          water_new: newWater,
+        const res = await fetch("http://localhost:5000/api/invoices", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
 
-          room_price: room.room_price,
-          electric_used: electricUsed,
-          water_used: waterUsed,
-          electric_cost: electricCost,
-          water_cost: waterCost,
-          total_amount: total,
-        }),
-      });
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Lưu hóa đơn thất bại");
+        }
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Lưu hóa đơn thất bại");
+        toast.success("Đã lưu hóa đơn thành công");
       }
 
-      toast.success("Đã lưu hóa đơn thành công");
       navigate(-1);
     } catch (err) {
       toast.error(err.message);
@@ -123,9 +175,14 @@ export default function RoomBill() {
             <span className="bg-indigo-50 text-indigo-600 text-xs font-bold px-2.5 py-1 rounded-full">
               Tháng {month}/{year}
             </span>
+            {existingInvoice && (
+              <span className="bg-amber-50 text-amber-600 text-xs font-bold px-2.5 py-1 rounded-full ml-2">
+                Đang chỉnh sửa
+              </span>
+            )}
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            Nhập các chỉ số tiêu thụ để tạo hóa đơn tháng
+            {existingInvoice ? "Chỉnh sửa hóa đơn đã tồn tại cho tháng này" : "Nhập các chỉ số tiêu thụ để tạo hóa đơn tháng"}
           </p>
         </div>
         <button
@@ -327,7 +384,7 @@ export default function RoomBill() {
                 className="w-full mt-4 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white py-3 rounded-lg font-bold transition shadow-sm text-sm"
               >
                 <Save size={16} />
-                {saving ? "Đang xử lý..." : "Lưu hóa đơn"}
+                {saving ? "Đang xử lý..." : existingInvoice ? "Cập nhật hóa đơn" : "Lưu hóa đơn"}
               </button>
             </div>
           </div>

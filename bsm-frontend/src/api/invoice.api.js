@@ -11,7 +11,8 @@ function getAuthHeader() {
 }
 
 export async function getInvoicesByMonth(month, houseId) {
-  const params = new URLSearchParams({ month });
+  const params = new URLSearchParams();
+  if (month) params.append("month", month);
   if (houseId) params.append("houseId", houseId);
 
   const res = await fetch(
@@ -36,6 +37,32 @@ export async function getInvoiceById(id) {
   if (!res.ok) throw new Error(data.message || "Lỗi tải hóa đơn");
   return data;
 }
+
+export async function getInvoiceByRoomAndMonth(roomId, month) {
+  const res = await fetch(`${API_URL}/room/${roomId}?month=${encodeURIComponent(month)}`, {
+    headers: getAuthHeader()
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Lỗi tải hóa đơn");
+  return data;
+}
+
+export async function updateInvoice(id, payload) {
+  const res = await fetch(`${API_URL}/${id}`, {
+    method: "PUT",
+    headers: {
+      ...getAuthHeader(),
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Lỗi cập nhật hóa đơn");
+  return data;
+}
+
 export async function markInvoicePaid(id) {
   const res = await fetch(`${API_URL}/${id}/pay`, {
     method: "PUT",

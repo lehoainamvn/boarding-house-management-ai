@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getTenantDashboard } from "../../api/tenantDashboard.api";
 import { 
   CreditCard, 
@@ -16,6 +17,7 @@ import {
 export default function TenantHome() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadData();
@@ -167,15 +169,17 @@ export default function TenantHome() {
           </div>
           
           <div className="space-y-3">
-            <button className="w-full flex items-center gap-3 p-3.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl transition-colors font-semibold text-sm">
+            <button 
+              onClick={() => navigate(`/tenant/invoices/${invoice?.id}`)}
+              className="w-full flex items-center gap-3 p-3.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl transition-colors font-semibold text-sm"
+            >
               <CreditCard size={18} />
               Thanh toán hóa đơn
             </button>
-            <button className="w-full flex items-center gap-3 p-3.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl transition-colors font-semibold text-sm">
-              <MessageSquare size={18} />
-              Gửi yêu cầu sửa chữa
-            </button>
-            <button className="w-full flex items-center gap-3 p-3.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl transition-colors font-semibold text-sm">
+            <button 
+              onClick={() => navigate('/tenant/rules')}
+              className="w-full flex items-center gap-3 p-3.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl transition-colors font-semibold text-sm"
+            >
               <ShieldCheck size={18} />
               Xem nội quy nhà trọ
             </button>
