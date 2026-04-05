@@ -46,7 +46,15 @@ cd bsm-management-backend
 npm install
 # Cấu hình file .env (Database, JWT, Groq API Key, Email Config)
 npm run dev
-## 👨‍💻 Author
-- **Le Hoai Nam**
+```
+
+### 3. Thiết lập Frontend
+```bash
+cd bsm-frontend
+npm install
+npm run dev
+```
+## 👨‍💻 Tác giả
+- **Lê Hoài Nam**
 - GitHub: [https://github.com/lehoainamvn](https://github.com/lehoainamvn)
 - Email: naml75803@gmail.com
