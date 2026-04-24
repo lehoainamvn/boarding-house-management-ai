@@ -13,78 +13,25 @@ import {
   ChevronDown,
   Calculator
 } from "lucide-react";
+import { useHouses } from "../../hooks/useHouses";
+import { useSettings } from "../../hooks/useSettings";
+import { useInfiniteScroll } from "../../hooks/useInfiniteScroll";
 
 import { getRoomsByHouse, createRoom, deleteRoom } from "../../api/room.api";
-import AddButton from "../../components/AddButton"; // <-- Import nút dùng chung ở đây
+import AddButton from "../../components/common/AddButton";
 
 const API_HOUSES = "http://localhost:5000/api/houses";
 const PAGE_SIZE = 8;
 
 export default function Rooms() {
-  const [houses, setHouses] = useState([]);
-  const [selectedHouseId, setSelectedHouseId] = useState(null);
+  const { houses, selectedHouseId, changeHouse } = useHouses();
+  const { settings } = useSettings();
 
   const [allRooms, setAllRooms] = useState([]);
-  const [visibleRooms, setVisibleRooms] = useState([]);
-  const [page, setPage] = useState(1);
-  const [settings, setSettings] = useState({
-    default_room_price: 0,
-    default_electric_price: 0,
-    default_water_price: 0
-  });
-
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const loaderRef = useRef(null);
-
-  useEffect(() => {
-    const urlHouseId = searchParams.get("houseId");
-    const savedHouseId = localStorage.getItem("selectedHouseId");
-
-    if (urlHouseId) {
-      setSelectedHouseId(urlHouseId);
-      localStorage.setItem("selectedHouseId", urlHouseId);
-    } else if (savedHouseId) {
-      setSelectedHouseId(savedHouseId);
-      setSearchParams({ houseId: savedHouseId });
-    }
-  }, []);
-
-  useEffect(() => {
-    async function fetchHouses() {
-      const token = localStorage.getItem("token");
-      const res = await fetch(API_HOUSES, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      setHouses(data);
-    }
-
-    async function fetchSettings() {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:5000/api/settings", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        setSettings((prev) => ({
-          ...prev,
-          default_room_price: data.default_room_price ?? prev.default_room_price,
-          default_electric_price: data.default_electric_price ?? prev.default_electric_price,
-          default_water_price: data.default_water_price ?? prev.default_water_price,
-        }));
-      } catch (error) {
-        // ignore; nếu không lấy được settings thì vẫn tạo được phòng với giá 0
-      }
-    }
-
-    fetchHouses();
-    fetchSettings();
-  }, []);
+  const { visibleItems: visibleRooms, loaderRef, hasMore, resetPagination, page } = useInfiniteScroll(allRooms, PAGE_SIZE);
 
   useEffect(() => {
     if (!selectedHouseId) return;
@@ -93,44 +40,14 @@ export default function Rooms() {
       setLoading(true);
       const data = await getRoomsByHouse(selectedHouseId);
       setAllRooms(data);
-      setVisibleRooms(data.slice(0, PAGE_SIZE));
-      setPage(1);
+      resetPagination();
       setLoading(false);
     }
     fetchRooms();
-  }, [selectedHouseId]);
-
-  useEffect(() => {
-    if (!loaderRef.current) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMore();
-        }
-      },
-      { threshold: 1 }
-    );
-
-    observer.observe(loaderRef.current);
-    return () => observer.disconnect();
-  }, [visibleRooms, allRooms]);
-
-  function loadMore() {
-    const nextPage = page + 1;
-    const nextRooms = allRooms.slice(0, nextPage * PAGE_SIZE);
-
-    if (nextRooms.length !== visibleRooms.length) {
-      setVisibleRooms(nextRooms);
-      setPage(nextPage);
-    }
-  }
+  }, [selectedHouseId, resetPagination]);
 
   function handleChangeHouse(e) {
-    const id = e.target.value;
-    setSelectedHouseId(id);
-    localStorage.setItem("selectedHouseId", id);
-    setSearchParams({ houseId: id });
+    changeHouse(e.target.value);
   }
 
   async function handleAddRoom() {
@@ -149,7 +66,6 @@ export default function Rooms() {
 
       const data = await getRoomsByHouse(houseId);
       setAllRooms(data);
-      setVisibleRooms(data.slice(0, page * PAGE_SIZE));
       toast.success("Đã tạo phòng thành công");
     } catch (err) {
       toast.error(err.message || "Tạo phòng thất bại");
@@ -163,7 +79,6 @@ export default function Rooms() {
       await deleteRoom(id);
       const data = await getRoomsByHouse(selectedHouseId);
       setAllRooms(data);
-      setVisibleRooms(data.slice(0, page * PAGE_SIZE));
       toast.success("Đã xóa phòng thành công");
     } catch (err) {
       toast.error(err.message || "Xóa phòng thất bại");
@@ -325,7 +240,7 @@ export default function Rooms() {
       )}
 
       {/* INFINITE SCROLL LOADER */}
-      {visibleRooms.length < allRooms.length && (
+      {hasMore && (
         <div ref={loaderRef} className="h-20 flex justify-center items-center">
           <div className="flex items-center gap-2 text-slate-400">
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-300 border-t-slate-500" />

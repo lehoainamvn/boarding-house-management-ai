@@ -3,7 +3,8 @@ import { getSocket } from "../../socket";
 import { Search, Send, MessageSquare, Phone, Video, MoreVertical, CheckCheck, Paperclip, X, Image as ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
 
-const API_URL = "http://localhost:5000/api";
+import { getMessageRooms, getMessagesByRoom, sendMessageApi } from "../../api/message.api";
+import { uploadImage } from "../../api/upload.api";
 
 export default function Messages() {
   const socket = getSocket();
@@ -39,11 +40,7 @@ export default function Messages() {
   async function loadRooms() {
     try {
       setLoadingRooms(true);
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_URL}/messages/rooms`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await getMessageRooms();
       setRooms(data);
     } catch (error) {
       console.error(error);
@@ -63,11 +60,7 @@ export default function Messages() {
   async function loadMessages(roomId) {
     try {
       setLoadingMessages(true);
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_URL}/messages/${roomId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await getMessagesByRoom(roomId);
       setMessages(data);
     } catch (error) {
       console.error(error);
@@ -123,7 +116,6 @@ export default function Messages() {
     if (!content.trim() && !selectedImage) return;
     if (!selectedRoom) return;
 
-    const token = localStorage.getItem("token");
     let imageUrl = null;
 
     try {
@@ -131,40 +123,17 @@ export default function Messages() {
 
       // 1. UPLOAD ẢNH LÊN SERVER NẾU CHỦ TRỌ CÓ CHỌN
       if (selectedImage) {
-        const formData = new FormData();
-        formData.append("image", selectedImage);
-
-        const uploadRes = await fetch(`${API_URL}/upload`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData
-        });
-
-        if (!uploadRes.ok) {
-          toast.error("Không thể upload hình ảnh!");
-          setIsUploading(false);
-          return;
-        }
-
-        const uploadData = await uploadRes.json();
+        const uploadData = await uploadImage(selectedImage);
         imageUrl = uploadData.url; 
       }
 
       // 2. GỬI TIN NHẮN (Gộp link ảnh vào đuôi Content)
-      const res = await fetch(`${API_URL}/messages`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          room_id: selectedRoom.id,
-          receiver_id: selectedRoom.tenant_id,
-          content: imageUrl ? `${content.trim()} [img]${imageUrl}[/img]`.trim() : content.trim()
-        })
+      const saved = await sendMessageApi({
+        room_id: selectedRoom.id,
+        receiver_id: selectedRoom.tenant_id,
+        content: imageUrl ? `${content.trim()} [img]${imageUrl}[/img]`.trim() : content.trim()
       });
 
-      const saved = await res.json();
       if (!saved.id) return;
 
       socket.emit("send_message", saved);
@@ -174,7 +143,7 @@ export default function Messages() {
 
     } catch (error) {
       console.error(error);
-      toast.error("Có lỗi xảy ra khi gửi tin nhắn!");
+      toast.error(error.message || "Có lỗi xảy ra khi gửi tin nhắn!");
     } finally {
       setIsUploading(false);
     }

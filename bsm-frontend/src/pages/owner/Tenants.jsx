@@ -1,71 +1,9 @@
 import { useEffect, useState, useRef } from "react";
+import { getTenants, createTenant, deleteTenant, updateTenant } from "../../api/client.api";
 import toast from "react-hot-toast";
 import { Edit, Trash2, User, Mail, Phone, Lock, Search, X, Users, Clock, ChevronDown } from "lucide-react";
-import AddButton from "../../components/AddButton"; 
-
-// ==========================================
-// COMPONENT: Custom Dropdown đồng bộ
-// ==========================================
-function CustomDropdown({ label, icon: Icon, options, value, onChange }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const selectedLabel = options.find((opt) => opt.value === value)?.label || options[0]?.label;
-
-  return (
-    <div className="w-full" ref={dropdownRef}>
-      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-        {label}
-      </label>
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className={`w-full h-11 flex items-center justify-between pl-10 pr-3.5 text-sm font-medium text-slate-700 bg-slate-50 border rounded-xl transition-all shadow-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 ${
-            isOpen ? "border-indigo-500 bg-white" : "border-slate-200 hover:border-slate-300 bg-white"
-          }`}
-        >
-          <Icon size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${isOpen ? "text-indigo-500" : "text-slate-400"}`} />
-          <span className="truncate pr-2">{selectedLabel}</span>
-          <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180 text-indigo-500" : ""}`} />
-        </button>
-
-        {isOpen && (
-          <div className="absolute z-50 top-full left-0 w-full mt-1.5 bg-white border border-slate-100 rounded-xl shadow-lg shadow-slate-200/50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-            <ul className="max-h-60 overflow-y-auto p-1.5 custom-scrollbar">
-              {options.map((opt) => (
-                <li
-                  key={opt.value}
-                  onClick={() => {
-                    onChange(opt.value);
-                    setIsOpen(false);
-                  }}
-                  className={`px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
-                    value === opt.value
-                      ? "bg-indigo-50 text-indigo-700 font-bold"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium"
-                  }`}
-                >
-                  {opt.label}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+import AddButton from "../../components/common/AddButton"; 
+import CustomDropdown from "../../components/common/CustomDropdown";
 
 // ==========================================
 // COMPONENT CHÍNH: Tenants
@@ -88,15 +26,10 @@ export default function Tenants() {
 
   async function fetchTenants() {
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/clients", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
+      const data = await getTenants();
       setTenants(data);
-    } catch {
-      toast.error("Không tải được danh sách khách thuê");
+    } catch (err) {
+      toast.error(err.message || "Không tải được danh sách khách thuê");
     } finally {
       setLoading(false);
     }
@@ -138,19 +71,7 @@ export default function Tenants() {
     }
 
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/clients", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(form),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        throw new Error(err?.message || "Thêm khách thuê thất bại");
-      }
+      await createTenant(form);
       toast.success("Đã thêm khách thuê");
       setShowAddModal(false);
       setForm(emptyForm);
@@ -164,15 +85,7 @@ export default function Tenants() {
     if (!confirm("Bạn chắc chắn muốn xóa khách thuê này?")) return;
 
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/clients/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message);
-      }
+      await deleteTenant(id);
       toast.success("Đã xóa khách thuê");
       setTenants((prev) => prev.filter((t) => t.id !== id));
     } catch (err) {
@@ -207,22 +120,7 @@ export default function Tenants() {
     }
 
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(
-        `http://localhost:5000/api/clients/${editingTenant.id}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(form),
-        }
-      );
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        throw new Error(err?.message || "Cập nhật thất bại");
-      }
+      await updateTenant(editingTenant.id, form);
       toast.success("Cập nhật thành công");
       setEditingTenant(null);
       setForm(emptyForm);

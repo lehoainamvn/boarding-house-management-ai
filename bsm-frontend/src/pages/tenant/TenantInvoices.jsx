@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getTenantInvoices } from "../../api/tenantInvoice.api";
+import { getTenantInvoices } from "../../api/tenant.api";
 import { useNavigate } from "react-router-dom";
 import { 
   FileText, 

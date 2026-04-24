@@ -111,21 +111,22 @@ app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/houses", houseRoutes);
-app.use("/api", meterRoutes);
 app.use("/api/clients", clientRoutes);
-app.use("/api", invoiceRoutes);
-app.use("/api", revenueRoutes);
 app.use("/api/tenants", tenantRoutes);
 app.use("/api/rooms", roomRoutes);
-app.use("/api/meters", meterRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/ai", aiRoutes);
-app.use("/api/ai-tenant",aiTenantRoutes);
+app.use("/api/ai-tenant", aiTenantRoutes);
 app.use("/api/predict-revenue", predictRoute);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/settings", settingsRoutes);
-app.use("/api", uploadRoutes);
 app.use("/api/notifications", notificationRoutes);
+
+// Flat routes (starting with /api/...)
+app.use("/api", meterRoutes); // covers /api/meters and /api/rooms/:id/meter-readings
+app.use("/api", invoiceRoutes); // covers /api/invoices
+app.use("/api", revenueRoutes); // covers /api/revenue
+app.use("/api", uploadRoutes); // covers /api/upload
 
 // ===== START SERVER =====
 /* START SERVER */

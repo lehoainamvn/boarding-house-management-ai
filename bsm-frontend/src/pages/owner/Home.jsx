@@ -4,54 +4,21 @@ import toast from "react-hot-toast";
 import { Pencil, Trash2, Home as HomeIcon, MapPin, ArrowRight, Plus } from "lucide-react";
 
 import CreateHouseModal from "../../components/modals/CreateHouseModal";
-import AddButton from "../../components/AddButton"; // <-- Import nút vừa tách
+import AddButton from "../../components/common/AddButton";
+import { useHouses } from "../../hooks/useHouses";
 
 const API_URL = "http://localhost:5000/api/houses";
 
 export default function Home() {
-  const [houses, setHouses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { houses, loading, deleteHouse, refreshHouses } = useHouses();
 
   const [showModal, setShowModal] = useState(false);
   const [editingHouse, setEditingHouse] = useState(null);
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchMyHouses();
-  }, []);
-
-  async function fetchMyHouses() {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(API_URL, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      setHouses(data);
-    } catch (err) {
-      console.error(err);
-      toast.error("Không tải được danh sách nhà trọ");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   async function handleDeleteHouse(houseId) {
-    if (!window.confirm("Bạn có chắc muốn xóa nhà trọ này?")) return;
-
-    try {
-      const token = localStorage.getItem("token");
-      await fetch(`${API_URL}/${houseId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      toast.success("Xóa nhà trọ thành công");
-      fetchMyHouses();
-    } catch (err) {
-      toast.error(err.message || "Xóa nhà thất bại");
-    }
+    await deleteHouse(houseId);
   }
 
   // Hàm mở modal tạo mới dùng chung
@@ -215,7 +182,7 @@ export default function Home() {
           onSuccess={() => {
             setShowModal(false);
             setEditingHouse(null);
-            fetchMyHouses();
+            refreshHouses();
             toast.success(
               editingHouse ? "Cập nhật nhà trọ thành công" : "Tạo nhà trọ thành công"
             );

@@ -2,7 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Zap, Droplet, Home, Wrench, Save, ArrowLeft, Calculator } from "lucide-react";
 import toast from "react-hot-toast";
-import { getInvoiceByRoomAndMonth, updateInvoice } from "../../api/invoice.api";
+import { getInvoiceByRoomAndMonth, updateInvoice, createInvoice } from "../../api/invoice.api";
 import { getMeterReadingByRoomAndMonth } from "../../api/meter.api";
 
 export default function RoomBill() {
@@ -135,22 +135,7 @@ export default function RoomBill() {
         await updateInvoice(existingInvoice.id, payload);
         toast.success("Đã cập nhật hóa đơn thành công");
       } else {
-        const token = localStorage.getItem("token");
-
-        const res = await fetch("http://localhost:5000/api/invoices", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        });
-
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.message || "Lưu hóa đơn thất bại");
-        }
-
+        await createInvoice(payload);
         toast.success("Đã lưu hóa đơn thành công");
       }
 
@@ -221,6 +206,11 @@ export default function RoomBill() {
                   type="number"
                   placeholder="0"
                   onChange={(e) => setOldElectric(+e.target.value)}
+                  onInput={(e) => {
+                    if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                      e.target.value = e.target.value.replace(/^0+/, '');
+                    }
+                  }}
                   className="w-full mt-1.5 px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 />
               </div>
@@ -230,6 +220,11 @@ export default function RoomBill() {
                   type="number"
                   placeholder="0"
                   onChange={(e) => setNewElectric(+e.target.value)}
+                  onInput={(e) => {
+                    if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                      e.target.value = e.target.value.replace(/^0+/, '');
+                    }
+                  }}
                   className="w-full mt-1.5 px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 />
               </div>
@@ -272,6 +267,11 @@ export default function RoomBill() {
                       type="number"
                       placeholder="0"
                       onChange={(e) => setOldWater(+e.target.value)}
+                      onInput={(e) => {
+                        if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                          e.target.value = e.target.value.replace(/^0+/, '');
+                        }
+                      }}
                       className="w-full mt-1.5 px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                     />
                   </div>
@@ -281,6 +281,11 @@ export default function RoomBill() {
                       type="number"
                       placeholder="0"
                       onChange={(e) => setNewWater(+e.target.value)}
+                      onInput={(e) => {
+                        if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                          e.target.value = e.target.value.replace(/^0+/, '');
+                        }
+                      }}
                       className="w-full mt-1.5 px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                     />
                   </div>
@@ -299,6 +304,11 @@ export default function RoomBill() {
                     min={1}
                     value={peopleCount}
                     onChange={(e) => setPeopleCount(+e.target.value)}
+                    onInput={(e) => {
+                      if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                        e.target.value = e.target.value.replace(/^0+/, '');
+                      }
+                    }}
                     className="w-full mt-1.5 px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                   />
                 </div>
@@ -324,6 +334,11 @@ export default function RoomBill() {
                 type="number"
                 placeholder="Ví dụ: tiền sửa chữa, vệ sinh thêm..."
                 onChange={(e) => setServiceFee(+e.target.value)}
+                onInput={(e) => {
+                  if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                    e.target.value = e.target.value.replace(/^0+/, '');
+                  }
+                }}
                 className="w-full mt-1.5 px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
             </div>

@@ -1,87 +1,49 @@
-const API_BASE_URL = "http://localhost:5000/api/auth";
+import { API_BASE_URL } from "../config";
+import { handleResponse } from "./api.helper";
 
-/**
- * LOGIN (GIỮ NGUYÊN)
- */
+const API_AUTH_URL = `${API_BASE_URL}/auth`;
+
 export const login = async ({ phone, password }) => {
-  const res = await fetch(`${API_BASE_URL}/login`, {
+  const res = await fetch(`${API_AUTH_URL}/login`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      identifier: phone,
-      password
-    })
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ identifier: phone, password })
   });
-
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || "Đăng nhập thất bại");
-  }
-
-  return res.json();
+  return handleResponse(res, "Đăng nhập thất bại");
 };
 
-/**
- * REGISTER (GIỮ NGUYÊN)
- */
-export async function registerApi(user) {
-  const res = await fetch(`${API_BASE_URL}/register`, {
+export const googleLoginApi = async (credential) => {
+  const res = await fetch(`${API_AUTH_URL}/google-login`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ credential })
+  });
+  return handleResponse(res, "Đăng nhập Google thất bại");
+};
+
+export async function registerApi(user) {
+  const res = await fetch(`${API_AUTH_URL}/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(user)
   });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Đăng ký thất bại");
-  }
-
-  return data;
+  return handleResponse(res, "Đăng ký thất bại");
 }
 
-/**
- * 📩 FORGOT PASSWORD (GỬI OTP)
- */
 export async function forgotPasswordApi(email) {
-  const res = await fetch(`${API_BASE_URL}/forgot-password`, {
+  const res = await fetch(`${API_AUTH_URL}/forgot-password`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email })
   });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Gửi OTP thất bại");
-  }
-
-  return data;
+  return handleResponse(res, "Gửi OTP thất bại");
 }
 
-/**
- * 🔄 RESET PASSWORD
- */
 export async function resetPasswordApi({ email, otp, newPassword }) {
-  const res = await fetch(`${API_BASE_URL}/reset-password`, {
+  const res = await fetch(`${API_AUTH_URL}/reset-password`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, otp, newPassword })
   });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Đổi mật khẩu thất bại");
-  }
-
-  return data;
+  return handleResponse(res, "Đổi mật khẩu thất bại");
 }

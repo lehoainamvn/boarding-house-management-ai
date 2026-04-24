@@ -11,7 +11,8 @@ import {
   Home
 } from "lucide-react";
 
-const API_URL = "http://localhost:5000/api/tenants";
+import { getTenantInvoiceDetail } from "../../api/tenant.api";
+import { createPaymentUrl } from "../../api/payment.api";
 
 export default function TenantInvoiceDetail() {
   const { id } = useParams();
@@ -25,11 +26,7 @@ export default function TenantInvoiceDetail() {
 
   async function loadDetail() {
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_URL}/invoices/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
+      const data = await getTenantInvoiceDetail(id);
       setInvoice(data);
     } catch (err) {
       console.error("Lỗi tải chi tiết:", err);
@@ -40,20 +37,7 @@ export default function TenantInvoiceDetail() {
   async function handlePayment() {
     setIsProcessing(true);
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/payment/create-url", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          amount: invoice.total_amount,
-          invoiceId: invoice.id,
-        }),
-      });
-
-      const data = await res.json();
+      const data = await createPaymentUrl(invoice.total_amount, invoice.id);
 
       if (data.paymentUrl) {
         window.location.href = data.paymentUrl;
@@ -62,7 +46,7 @@ export default function TenantInvoiceDetail() {
       }
     } catch (err) {
       console.error("Lỗi kết nối thanh toán:", err);
-      alert("Lỗi hệ thống, vui lòng thử lại sau.");
+      alert(err.message || "Lỗi hệ thống, vui lòng thử lại sau.");
     } finally {
       setIsProcessing(false);
     }

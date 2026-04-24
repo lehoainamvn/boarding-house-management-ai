@@ -3,12 +3,14 @@ import {
   login,
   register,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  googleLogin
 } from "../controllers/auth.controller.js";
 
 const router = express.Router();
 
 router.post("/login", login);
+router.post("/google-login", googleLogin);
 router.post("/register", register);
 
 

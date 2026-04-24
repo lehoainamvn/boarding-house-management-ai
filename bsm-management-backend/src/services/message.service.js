@@ -50,3 +50,19 @@ export async function sendMessageService(data) {
 
   return message;
 }
+
+export async function getTenantRoomService(tenantId) {
+  const pool = await poolPromise;
+
+  const result = await pool.request()
+    .input("tenant_id", tenantId)
+    .query(`
+      SELECT TOP 1 r.id, r.owner_id
+      FROM tenant_rooms tr
+      JOIN rooms r ON r.id = tr.room_id
+      WHERE tr.tenant_id = @tenant_id
+      ORDER BY tr.start_date DESC
+    `);
+
+  return result.recordset[0];
+}

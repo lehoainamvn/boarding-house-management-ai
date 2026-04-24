@@ -21,7 +21,7 @@ export default function AuthLayout({ children }) {
 
           <div className="relative z-10 space-y-4">
             <h1 className="text-4xl font-extrabold tracking-tight">
-              BSM Management
+              Nathustay
             </h1>
             <p className="text-indigo-200 text-sm font-medium leading-relaxed">
               Giải pháp vận hành và quản lý nhà trọ, căn hộ dịch vụ tự động, chuyên nghiệp hàng đầu.
@@ -43,7 +43,7 @@ export default function AuthLayout({ children }) {
           </div>
 
           <div className="relative z-10 text-xs text-indigo-300 font-medium">
-            © 2026 BSM. All rights reserved.
+            © 2026 Nathustay. All rights reserved.
           </div>
         </div>
 

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
+import { getRoomById, updateRoom } from "../../api/room.api";
+import { findTenantByEmail, assignTenantToRoom, removeTenantFromRoom } from "../../api/tenant.api";
 
 export default function RoomDetail() {
   const { id } = useParams();
@@ -50,15 +52,7 @@ export default function RoomDetail() {
   async function fetchRoom() {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-
-      const res = await fetch(`http://localhost:5000/api/rooms/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) throw new Error("Không tải được phòng");
-
-      const data = await res.json();
+      const data = await getRoomById(id);
       setRoom(data);
       setRoomName(data.room_name);
 
@@ -82,32 +76,18 @@ export default function RoomDetail() {
   /* ================= SAVE NAME ================= */
   async function saveRoomName() {
     try {
-      const token = localStorage.getItem("token");
-
-      const res = await fetch(`http://localhost:5000/api/rooms/${id}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ room_name: roomName }),
-      });
-
-      if (!res.ok) throw new Error();
-
+      await updateRoom(id, { room_name: roomName });
       toast.success("Đã cập nhật tên phòng");
       setEditingName(false);
       fetchRoom();
-    } catch {
-      toast.error("Không thể cập nhật tên phòng");
+    } catch (err) {
+      toast.error(err.message || "Không thể cập nhật tên phòng");
     }
   }
 
   /* ================= SAVE PRICE ================= */
   async function savePrice() {
     try {
-      const token = localStorage.getItem("token");
-
       const payload =
         priceForm.water_type === "PERSON"
           ? {
@@ -124,18 +104,7 @@ export default function RoomDetail() {
               water_price: Number(priceForm.water_price),
             };
 
-      const res = await fetch(`http://localhost:5000/api/rooms/${id}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-
+      await updateRoom(id, payload);
       toast.success("Đã lưu giá");
       setEditingPrice(false);
       fetchRoom();
@@ -147,16 +116,7 @@ export default function RoomDetail() {
   /* ================= TENANT EXISTING ================= */
   async function handleCheckEmail() {
     try {
-      const token = localStorage.getItem("token");
-
-      const res = await fetch(
-        `http://localhost:5000/api/tenants/find-by-email?email=${email}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (!res.ok) throw new Error("Không tìm thấy người thuê");
-
-      const data = await res.json();
+      const data = await findTenantByEmail(email);
       setFoundTenant(data);
       setError("");
     } catch (err) {
@@ -167,26 +127,11 @@ export default function RoomDetail() {
 
   async function handleAssignTenant() {
     try {
-      const token = localStorage.getItem("token");
-
-      const res = await fetch(
-        `http://localhost:5000/api/tenants/rooms/${id}/assign-tenant`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            tenantType: "EXISTING",
-            email: foundTenant.email,
-            start_date: startDateExisting,
-          }),
-        }
-      );
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      await assignTenantToRoom(id, {
+        tenantType: "EXISTING",
+        email: foundTenant.email,
+        start_date: startDateExisting,
+      });
 
       toast.success("Gán người thuê thành công");
       setEmail("");
@@ -202,44 +147,21 @@ export default function RoomDetail() {
     if (!window.confirm("Xác nhận trả phòng?")) return;
 
     try {
-      const token = localStorage.getItem("token");
-
-      const res = await fetch(
-        `http://localhost:5000/api/tenants/rooms/${id}/remove-tenant`,
-        { method: "POST", headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (!res.ok) throw new Error();
-
+      await removeTenantFromRoom(id);
       toast.success("Đã trả phòng");
       fetchRoom();
-    } catch {
-      toast.error("Không thể trả phòng");
+    } catch (err) {
+      toast.error(err.message || "Không thể trả phòng");
     }
   }
 
   /* ================= CREATE + ASSIGN ================= */
   async function handleCreateAndAssignTenant() {
     try {
-      const token = localStorage.getItem("token");
-
-      const res = await fetch(
-        `http://localhost:5000/api/tenants/rooms/${id}/assign-tenant`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            tenantType: "NEW",
-            ...newTenantForm,
-          }),
-        }
-      );
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      await assignTenantToRoom(id, {
+        tenantType: "NEW",
+        ...newTenantForm,
+      });
 
       toast.success("Tạo & gán phòng thành công");
       setIsCreatingNewTenant(false);
@@ -386,6 +308,11 @@ export default function RoomDetail() {
                   onChange={(e) =>
                     setPriceForm({ ...priceForm, room_price: e.target.value })
                   }
+                  onInput={(e) => {
+                    if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                      e.target.value = e.target.value.replace(/^0+/, '');
+                    }
+                  }}
                 />
               </div>
 
@@ -403,6 +330,11 @@ export default function RoomDetail() {
                       electric_price: e.target.value,
                     })
                   }
+                  onInput={(e) => {
+                    if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                      e.target.value = e.target.value.replace(/^0+/, '');
+                    }
+                  }}
                 />
               </div>
 
@@ -456,6 +388,11 @@ export default function RoomDetail() {
                         water_price: e.target.value,
                       })
                     }
+                    onInput={(e) => {
+                      if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                        e.target.value = e.target.value.replace(/^0+/, '');
+                      }
+                    }}
                   />
                 </div>
               ) : (
@@ -474,6 +411,11 @@ export default function RoomDetail() {
                           people_count: e.target.value,
                         })
                       }
+                      onInput={(e) => {
+                        if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                          e.target.value = e.target.value.replace(/^0+/, '');
+                        }
+                      }}
                     />
                   </div>
 
@@ -491,6 +433,11 @@ export default function RoomDetail() {
                           water_price_per_person: e.target.value,
                         })
                       }
+                      onInput={(e) => {
+                        if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                          e.target.value = e.target.value.replace(/^0+/, '');
+                        }
+                      }}
                     />
                   </div>
                 </div>

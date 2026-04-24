@@ -38,7 +38,7 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import TenantLayout from "./layouts/TenantLayout";
 
 /* PROTECT */
-import ProtectedRoute from "./components/ProtectedRoute";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 export default function App() {
   return (

@@ -1,61 +1,60 @@
-const API_URL = "http://localhost:5000/api/clients";
+import { API_BASE_URL } from "../config";
+import { getAuthHeader, handleResponse } from "./api.helper";
 
-function getAuthHeader() {
-  const token = localStorage.getItem("token");
-  return {
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json",
-  };
-}
+const API_TENANT_URL = `${API_BASE_URL}/tenants`;
 
-export async function getTenants() {
-  const res = await fetch(API_URL, {
-    headers: getAuthHeader(),
+/* ================= PORTAL (TENANT ROLE) ================= */
+
+export async function getTenantDashboard() {
+  const res = await fetch(`${API_TENANT_URL}/dashboard`, {
+    headers: getAuthHeader()
   });
-
-  if (!res.ok) {
-    throw new Error("Fetch tenants failed");
-  }
-
-  return res.json();
+  return handleResponse(res, "Lỗi tải dashboard");
 }
 
-export async function getTenantById(id) {
-  const res = await fetch(`${API_URL}/${id}`, {
-    headers: getAuthHeader(),
+export async function getTenantInvoices() {
+  const res = await fetch(`${API_TENANT_URL}/invoices`, {
+    headers: getAuthHeader()
   });
-
-  if (!res.ok) throw new Error();
-  return res.json();
+  return handleResponse(res, "Lỗi tải hóa đơn");
 }
 
-export async function createTenant(data) {
-  const res = await fetch(API_URL, {
+export async function getTenantStatistics() {
+  const res = await fetch(`${API_TENANT_URL}/statistics`, {
+    headers: getAuthHeader()
+  });
+  return handleResponse(res, "Lỗi tải thống kê");
+}
+
+export async function getTenantInvoiceDetail(id) {
+  const res = await fetch(`${API_TENANT_URL}/invoices/${id}`, {
+    headers: getAuthHeader()
+  });
+  return handleResponse(res, "Lỗi tải chi tiết hóa đơn");
+}
+
+/* ================= MANAGEMENT (OWNER ROLE) ================= */
+
+export async function findTenantByEmail(email) {
+  const res = await fetch(`${API_TENANT_URL}/find-by-email?email=${email}`, {
+    headers: getAuthHeader()
+  });
+  return handleResponse(res, "Không tìm thấy người thuê");
+}
+
+export async function assignTenantToRoom(roomId, data) {
+  const res = await fetch(`${API_TENANT_URL}/rooms/${roomId}/assign-tenant`, {
     method: "POST",
     headers: getAuthHeader(),
-    body: JSON.stringify(data),
+    body: JSON.stringify(data)
   });
-
-  if (!res.ok) throw new Error();
-  return res.json();
+  return handleResponse(res, "Gán người thuê thất bại");
 }
 
-export async function updateTenant(id, data) {
-  const res = await fetch(`${API_URL}/${id}`, {
-    method: "PUT",
-    headers: getAuthHeader(),
-    body: JSON.stringify(data),
+export async function removeTenantFromRoom(roomId) {
+  const res = await fetch(`${API_TENANT_URL}/rooms/${roomId}/remove-tenant`, {
+    method: "POST",
+    headers: getAuthHeader()
   });
-
-  if (!res.ok) throw new Error();
-  return res.json();
-}
-
-export async function deleteTenant(id) {
-  const res = await fetch(`${API_URL}/${id}`, {
-    method: "DELETE",
-    headers: getAuthHeader(),
-  });
-
-  if (!res.ok) throw new Error();
+  return handleResponse(res, "Trả phòng thất bại");
 }

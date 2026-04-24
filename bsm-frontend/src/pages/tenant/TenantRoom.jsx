@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getTenantDashboard } from "../../api/tenantDashboard.api";
+import { getTenantDashboard } from "../../api/tenant.api";
 import { 
   Building2, 
   DoorClosed, 

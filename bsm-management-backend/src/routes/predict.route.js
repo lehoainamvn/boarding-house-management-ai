@@ -25,20 +25,28 @@ router.get("/", async (req, res) => {
       .query(`
         SELECT 
           i.month,
-          SUM(i.total_amount) as revenue
+          SUM(i.total_amount) as revenue,
+          COUNT(DISTINCT i.room_id) as paid_rooms
         FROM invoices i
         JOIN rooms r ON i.room_id = r.id
-        WHERE r.house_id = @houseId
+        WHERE r.house_id = @houseId AND i.status = 'PAID'
         GROUP BY i.month
         ORDER BY i.month ASC
       `);
 
+    // Lấy thêm tổng số phòng để tính occupancy_rate thực tế
+    const roomResult = await pool.request()
+      .input("houseId", houseId)
+      .query(`SELECT COUNT(*) as total_rooms FROM rooms WHERE house_id = @houseId`);
+    const totalRooms = roomResult.recordset[0]?.total_rooms || 1;
+
     const dbData = result.recordset;
 
     const payload = JSON.stringify({
-      data: dbData,
+      history: dbData,
       months,
-      simOccupancy
+      simOccupancy,
+      totalRooms
     });
 
     const scriptPath = path.join(__dirname, "../ml/predict_revenue.py");

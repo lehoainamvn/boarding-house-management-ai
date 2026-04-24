@@ -1,34 +1,37 @@
-const API_URL = "http://localhost:5000/api/houses";
+import { API_BASE_URL } from "../config";
+import { getAuthHeader, handleResponse } from "./api.helper";
 
-export async function createHouseApi(data) {
-  const token = localStorage.getItem("token");
-
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify(data)
-  });
-
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.message);
-  return json;
-}
-
-function getAuthHeader() {
-  const token = localStorage.getItem("token");
-  if (!token) throw new Error("Chưa đăng nhập");
-  return { Authorization: `Bearer ${token}` };
-}
+const API_HOUSE_URL = `${API_BASE_URL}/houses`;
 
 export async function getHouses() {
-  const res = await fetch(API_URL, {
+  const res = await fetch(API_HOUSE_URL, {
     headers: getAuthHeader()
   });
+  return handleResponse(res, "Lỗi lấy danh sách nhà trọ");
+}
 
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Lỗi lấy nhà trọ");
-  return data;
+export async function createHouse(data) {
+  const res = await fetch(API_HOUSE_URL, {
+    method: "POST",
+    headers: getAuthHeader(),
+    body: JSON.stringify(data)
+  });
+  return handleResponse(res, "Lỗi tạo nhà trọ");
+}
+
+export async function updateHouse(id, data) {
+  const res = await fetch(`${API_HOUSE_URL}/${id}`, {
+    method: "PUT",
+    headers: getAuthHeader(),
+    body: JSON.stringify(data)
+  });
+  return handleResponse(res, "Lỗi cập nhật nhà trọ");
+}
+
+export async function deleteHouse(id) {
+  const res = await fetch(`${API_HOUSE_URL}/${id}`, {
+    method: "DELETE",
+    headers: getAuthHeader()
+  });
+  return handleResponse(res, "Lỗi xóa nhà trọ");
 }
