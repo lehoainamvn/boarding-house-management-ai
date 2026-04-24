@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getInvoiceById, markInvoicePaid } from "../../api/invoice.api";
+import { getInvoiceById, updateInvoiceStatus } from "../../api/invoice.api";
 import toast from "react-hot-toast";
 
 export default function InvoiceDetail() {
@@ -31,7 +31,7 @@ export default function InvoiceDetail() {
     if (!window.confirm("Xác nhận đã thu tiền hóa đơn này?")) return;
 
     try {
-      await markInvoicePaid(invoice.id);
+      await updateInvoiceStatus(invoice.id, "PAID");
       setInvoice({
         ...invoice,
         status: "PAID",

@@ -1,10 +1,8 @@
-import sql from "mssql";
-import { poolPromise } from "../config/db.js";
-
 import {
   getMessagesService,
   sendMessageService,
-  getOwnerRoomsService
+  getOwnerRoomsService,
+  getTenantRoomService
 } from "../services/message.service.js";
 
 /* =========================
@@ -67,26 +65,14 @@ export async function sendMessage(req, res) {
 ========================= */
 export async function getTenantRoom(req, res) {
   try {
-    console.log("🔥 USER TOKEN:", req.user); // 👈 THÊM DÒNG NÀY
+    console.log("🔥 USER TOKEN:", req.user); 
 
     const userId = req.user.id;
+    const room = await getTenantRoomService(userId);
 
-    const pool = await poolPromise;
+    console.log("🔥 RESULT:", room);
 
-    const result = await pool.request()
-      .input("tenant_id", sql.Int, userId)
-      .query(`
-        SELECT TOP 1 r.id, r.owner_id
-        FROM tenant_rooms tr
-        JOIN rooms r ON r.id = tr.room_id
-        WHERE tr.tenant_id = @tenant_id
-        ORDER BY tr.start_date DESC
-      `);
-
-    console.log("🔥 RESULT:", result.recordset);
-
-    res.json(result.recordset[0]);
-
+    res.json(room);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

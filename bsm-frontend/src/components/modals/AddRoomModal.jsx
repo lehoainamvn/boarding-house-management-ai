@@ -45,6 +45,11 @@ export default function AddRoomModal({ houseId, onClose, onSuccess }) {
           onChange={(e) =>
             setForm({ ...form, room_price: e.target.value })
           }
+          onInput={(e) => {
+            if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+              e.target.value = e.target.value.replace(/^0+/, '');
+            }
+          }}
         />
 
         <input
@@ -55,6 +60,11 @@ export default function AddRoomModal({ houseId, onClose, onSuccess }) {
           onChange={(e) =>
             setForm({ ...form, electric_price: e.target.value })
           }
+          onInput={(e) => {
+            if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+              e.target.value = e.target.value.replace(/^0+/, '');
+            }
+          }}
         />
 
         <input
@@ -65,6 +75,11 @@ export default function AddRoomModal({ houseId, onClose, onSuccess }) {
           onChange={(e) =>
             setForm({ ...form, water_price: e.target.value })
           }
+          onInput={(e) => {
+            if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+              e.target.value = e.target.value.replace(/^0+/, '');
+            }
+          }}
         />
 
         <div className="flex justify-end gap-2 pt-2">

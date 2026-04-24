@@ -1,28 +1,27 @@
-// src/api/user.api.js
-const API_URL = "http://localhost:5000/api/users"; // ✅ ĐỔI user -> users
+import { API_BASE_URL } from "../config";
+import { getAuthHeader, handleResponse } from "./api.helper";
 
-function getAuthHeader() {
-  const token = localStorage.getItem("token");
-  if (!token) throw new Error("Chưa đăng nhập");
+const API_USER_URL = `${API_BASE_URL}/users`;
 
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`
-  };
+export async function getUsers() {
+  const res = await fetch(API_USER_URL, {
+    headers: getAuthHeader()
+  });
+  return handleResponse(res, "Lỗi lấy danh sách người dùng");
 }
 
-export async function changePassword({ oldPassword, newPassword }) {
-  const res = await fetch(`${API_URL}/change-password`, {
+export async function getUserById(id) {
+  const res = await fetch(`${API_USER_URL}/${id}`, {
+    headers: getAuthHeader()
+  });
+  return handleResponse(res, "Lỗi lấy thông tin người dùng");
+}
+
+export async function changePassword(data) {
+  const res = await fetch(`${API_USER_URL}/change-password`, {
     method: "PUT",
     headers: getAuthHeader(),
-    body: JSON.stringify({ oldPassword, newPassword })
+    body: JSON.stringify(data)
   });
-
-  const result = await res.json();
-
-  if (!res.ok) {
-    throw new Error(result.message || "Đổi mật khẩu thất bại");
-  }
-
-  return result;
+  return handleResponse(res, "Lỗi đổi mật khẩu");
 }

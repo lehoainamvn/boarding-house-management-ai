@@ -54,6 +54,7 @@ export default function AIChatBox(){
   }, [messages]);
 
   const sendMessage = async (text) => {
+    if (loading) return;
 
     const question = text || input;
 
@@ -257,7 +258,8 @@ export default function AIChatBox(){
                         <button
                           key={index}
                           onClick={() => sendMessage(s)}
-                          className="text-xs font-semibold bg-indigo-50/70 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1"
+                          disabled={loading}
+                          className="text-xs font-semibold bg-indigo-50/70 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Sparkles size={10} className="text-indigo-500" />
                           {s}

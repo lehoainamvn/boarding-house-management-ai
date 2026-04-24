@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { login } from "../../api/auth.api";
+import { login, googleLoginApi } from "../../api/auth.api";
 import toast from "react-hot-toast";
 import { Phone, Lock } from "lucide-react";
 import AuthLayout from "../../layouts/AuthLayout"; 
-import Captcha from "../../components/Captcha"; // <-- Import Captcha mới tách
+import Captcha from "../../components/common/Captcha";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -61,6 +62,33 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
+  };
+
+  /* ================= GOOGLE LOGIN HANDLER ================= */
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      setLoading(true);
+      const data = await googleLoginApi(credentialResponse.credential);
+      
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      toast.success("Đăng nhập Google thành công!");
+
+      setTimeout(() => {
+        if (data.user.role === "OWNER") navigate("/home", { replace: true });
+        else if (data.user.role === "TENANT") navigate("/tenant/home", { replace: true });
+      }, 600);
+      
+    } catch (err) {
+      toast.error(err?.message || "Đăng nhập Google thất bại");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleFailure = () => {
+    toast.error("Đăng nhập Google thất bại");
   };
 
   return (
@@ -122,6 +150,23 @@ export default function Login() {
           ) : "Đăng nhập"}
         </button>
       </form>
+
+      {/* DIVIDER */}
+      <div className="flex items-center space-x-3 my-4">
+        <div className="flex-1 h-px bg-slate-200"></div>
+        <span className="text-xs font-medium text-slate-400">Hoặc</span>
+        <div className="flex-1 h-px bg-slate-200"></div>
+      </div>
+
+      {/* GOOGLE LOGIN */}
+      <div className="flex justify-center w-full mb-4">
+        <GoogleLogin
+          onSuccess={handleGoogleSuccess}
+          onError={handleGoogleFailure}
+          theme="outline"
+          size="large"
+        />
+      </div>
 
       {/* FOOTER */}
       <div className="flex justify-between items-center text-xs font-medium pt-2">

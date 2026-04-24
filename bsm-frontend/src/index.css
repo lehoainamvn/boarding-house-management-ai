@@ -86,3 +86,111 @@ body {
 .text-muted {
   @apply text-gray-500 text-sm;
 }
+
+/* ===============================
+   AI CHATBOX MARKDOWN STYLES
+================================ */
+.markdown-content {
+  line-height: 1.7;
+  font-size: 0.8rem;
+  color: #374151;
+}
+
+.markdown-content p {
+  margin-bottom: 0.5rem;
+}
+
+.markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* Bảng: scroll ngang, không bị tràn */
+.markdown-content table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.75rem;
+  margin: 0.5rem 0;
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.markdown-content thead tr {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+}
+
+.markdown-content th {
+  padding: 6px 12px;
+  text-align: left;
+  font-weight: 600;
+  border: 1px solid #6366f1;
+}
+
+.markdown-content td {
+  padding: 5px 12px;
+  border: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.markdown-content tbody tr:nth-child(even) {
+  background-color: #f5f5ff;
+}
+
+.markdown-content tbody tr:hover {
+  background-color: #eef2ff;
+}
+
+/* Heading */
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3 {
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+  color: #1e293b;
+}
+
+.markdown-content h1 { font-size: 1rem; }
+.markdown-content h2 { font-size: 0.9rem; }
+.markdown-content h3 { font-size: 0.85rem; }
+
+/* Bold & italic */
+.markdown-content strong {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.markdown-content em {
+  font-style: italic;
+  color: #6366f1;
+}
+
+/* Danh sách */
+.markdown-content ul,
+.markdown-content ol {
+  padding-left: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.markdown-content li {
+  margin-bottom: 0.2rem;
+}
+
+/* Code inline */
+.markdown-content code {
+  background: #f1f5f9;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.78rem;
+  color: #6366f1;
+}
+
+/* Blockquote */
+.markdown-content blockquote {
+  border-left: 3px solid #6366f1;
+  padding-left: 0.75rem;
+  color: #64748b;
+  margin: 0.5rem 0;
+  font-style: italic;
+}

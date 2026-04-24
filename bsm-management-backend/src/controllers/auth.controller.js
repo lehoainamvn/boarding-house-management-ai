@@ -1,5 +1,5 @@
 import { loginService, registerService, forgotPasswordService,
-  resetPasswordService } from "../services/auth.service.js";
+  resetPasswordService, googleLoginService } from "../services/auth.service.js";
 
 /* ================= LOGIN ================= */
 export async function login(req, res) {
@@ -25,6 +25,26 @@ export async function login(req, res) {
     });
   }
 }
+
+/* ================= GOOGLE LOGIN ================= */
+export async function googleLogin(req, res) {
+  try {
+    const { credential } = req.body;
+    if (!credential) {
+      return res.status(400).json({
+        message: "Thiếu Google credential"
+      });
+    }
+
+    const data = await googleLoginService(credential);
+    res.json(data);
+  } catch (err) {
+    res.status(401).json({
+      message: err.message || "Google login failed"
+    });
+  }
+}
+
 
 /* ================= REGISTER ================= */
 export async function register(req, res) {

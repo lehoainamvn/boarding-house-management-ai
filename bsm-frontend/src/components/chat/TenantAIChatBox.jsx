@@ -30,6 +30,7 @@ export default function TenantAIChatBox(){
   },[messages])
 
   const sendMessage = async (text)=>{
+    if (loading) return;
 
     const message = text || input
     if(!message.trim()) return
@@ -166,7 +167,8 @@ export default function TenantAIChatBox(){
                         <button
                           key={index}
                           onClick={() => sendMessage(s)}
-                          className="text-xs font-semibold bg-indigo-50/80 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1"
+                          disabled={loading}
+                          className="text-xs font-semibold bg-indigo-50/80 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Sparkles size={10} className="text-indigo-500" />
                           {s}

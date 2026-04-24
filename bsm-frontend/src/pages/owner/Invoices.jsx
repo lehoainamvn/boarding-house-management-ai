@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { getInvoicesByMonth } from "../../api/invoice.api";
-import { getHouses } from "../../api/house.api";
 import { FileText, Send, Copy, X } from "lucide-react";
-import InvoiceFilter from "../../components/Filter"; // <-- Import component vừa tách
+import InvoiceFilter from "../../components/common/InvoiceFilter";
+import { useHouses } from "../../hooks/useHouses";
 
 export default function Invoices() {
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
+  const { houses } = useHouses();
 
   /* ================= FILTER STATE ================= */
   const [year, setYear] = useState(
@@ -26,7 +27,6 @@ export default function Invoices() {
   );
 
   /* ================= DATA ================= */
-  const [houses, setHouses] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [filteredInvoices, setFilteredInvoices] = useState([]);
 
@@ -43,10 +43,6 @@ export default function Invoices() {
     localStorage.setItem("invoice_status", statusFilter);
   }, [year, month, houseId, statusFilter]);
 
-  /* ================= LOAD HOUSES ================= */
-  useEffect(() => {
-    getHouses().then(setHouses);
-  }, []);
 
   /* ================= FETCH ================= */
   async function handleFetch() {

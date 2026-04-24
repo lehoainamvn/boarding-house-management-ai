@@ -4,7 +4,7 @@ import { registerApi } from "../../api/auth.api";
 import toast from "react-hot-toast";
 import { User, Phone, Mail, Lock, UserCircle, Home } from "lucide-react";
 import AuthLayout from "../../layouts/AuthLayout"; // <-- Import Layout dùng chung
-import Captcha from "../../components/Captcha"; // <-- Import Captcha dùng chung
+import Captcha from "../../components/common/Captcha";
 
 export default function Register() {
   const navigate = useNavigate();

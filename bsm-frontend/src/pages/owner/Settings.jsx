@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
+import { getSettings, updateSettings } from "../../api/settings.api";
 import { 
   Save, 
   Zap, 
@@ -31,15 +32,8 @@ export default function Settings() {
 
     async function fetchSettings() {
       try {
-        const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:5000/api/settings", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          setSettings(prev => ({ ...prev, ...data, apply_to_all: false }));
-        }
+        const data = await getSettings();
+        setSettings(prev => ({ ...prev, ...data, apply_to_all: false }));
       } catch (error) {
         toast.error("Không thể tải cấu hình");
       } finally {
@@ -63,20 +57,8 @@ export default function Settings() {
     setSaving(true);
     
     try {
-      const token = localStorage.getItem("token");
-      
       await toast.promise(
-        fetch("http://localhost:5000/api/settings", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify(settings)
-        }).then(res => {
-          if (!res.ok) throw new Error("Lỗi khi lưu");
-          return res.json();
-        }),
+        updateSettings(settings),
         {
           loading: "Đang lưu cấu hình...",
           success: "Đã cập nhật cài đặt hệ thống",
@@ -157,6 +139,12 @@ export default function Settings() {
                     name="billing_day"
                     value={settings.billing_day}
                     onChange={handleChange}
+                    onFocus={(e) => e.target.select()}
+                    onInput={(e) => {
+                      if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                        e.target.value = e.target.value.replace(/^0+/, '');
+                      }
+                    }}
                     className="w-full pl-4 pr-12 py-3.5 bg-slate-50/70 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-600/10 focus:border-indigo-600 focus:bg-white outline-none transition-all font-bold text-lg text-slate-800"
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold uppercase">Ngày</span>
@@ -185,6 +173,12 @@ export default function Settings() {
                       name="default_room_price"
                       value={settings.default_room_price}
                       onChange={handleChange}
+                      onFocus={(e) => e.target.select()}
+                      onInput={(e) => {
+                        if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                          e.target.value = e.target.value.replace(/^0+/, '');
+                        }
+                      }}
                       placeholder="0"
                       className="w-full pl-4 pr-14 py-3.5 bg-slate-50/70 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 focus:bg-white outline-none transition-all font-bold text-slate-800"
                     />
@@ -203,6 +197,12 @@ export default function Settings() {
                       name="default_electric_price"
                       value={settings.default_electric_price}
                       onChange={handleChange}
+                      onFocus={(e) => e.target.select()}
+                      onInput={(e) => {
+                        if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                          e.target.value = e.target.value.replace(/^0+/, '');
+                        }
+                      }}
                       placeholder="0"
                       className="w-full pl-4 pr-14 py-3.5 bg-slate-50/70 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 focus:bg-white outline-none transition-all font-bold text-slate-800"
                     />
@@ -221,6 +221,12 @@ export default function Settings() {
                       name="default_water_price"
                       value={settings.default_water_price}
                       onChange={handleChange}
+                      onFocus={(e) => e.target.select()}
+                      onInput={(e) => {
+                        if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                          e.target.value = e.target.value.replace(/^0+/, '');
+                        }
+                      }}
                       placeholder="0"
                       className="w-full pl-4 pr-14 py-3.5 bg-slate-50/70 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 focus:bg-white outline-none transition-all font-bold text-slate-800"
                     />

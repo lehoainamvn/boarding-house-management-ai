@@ -1,5 +1,8 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { OAuth2Client } from "google-auth-library";
+
+const googleClient = new OAuth2Client();
 
 import {
   findUserByEmailOrPhone,
@@ -33,6 +36,55 @@ export async function loginService(identifier, password) {
 
   return {
     token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role
+    }
+  };
+}
+
+/**
+ * GOOGLE LOGIN
+ */
+export async function googleLoginService(token) {
+  // Google token verification
+  const ticket = await googleClient.verifyIdToken({
+    idToken: token,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
+  
+  const payload = ticket.getPayload();
+  const { email, name } = payload;
+
+  let user = await findUserByEmailOrPhone(email);
+
+  if (!user) {
+    // Create new user if not exists
+    const randomPassword = Math.random().toString(36).slice(-10) + "A1!";
+    const hashedPassword = await bcrypt.hash(randomPassword, 10);
+    
+    await createUser({
+      name: name || "Google User",
+      email,
+      phone: "GG-" + Date.now().toString().slice(-8), // Dummy phone to avoid NOT NULL constraints
+      password: hashedPassword,
+      role: "OWNER"
+    });
+    
+    user = await findUserByEmailOrPhone(email);
+  }
+
+  const jwtToken = jwt.sign(
+    { id: user.id, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: "1d" }
+  );
+
+  return {
+    token: jwtToken,
     user: {
       id: user.id,
       name: user.name,

@@ -4,7 +4,6 @@ import {
   getRevenueSummary,
   getRevenueByRoom
 } from "../../api/revenue.api";
-import { getHouses } from "../../api/house.api";
 
 import * as XLSX from "xlsx-js-style";
 import { saveAs } from "file-saver";
@@ -22,6 +21,9 @@ import { Bar, Doughnut } from "react-chartjs-2";
 
 import { Download, TrendingUp, Home, Calendar, Users, DoorOpen, ChevronDown, Moon, FileText, ArrowUpRight } from "lucide-react";
 
+import CustomDropdown from "../../components/common/CustomDropdown";
+import { useHouses } from "../../hooks/useHouses";
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -30,72 +32,6 @@ ChartJS.register(
   Tooltip,
   Legend
 );
-
-// ==========================================
-// COMPONENT: Custom Dropdown đồng bộ
-// ==========================================
-function CustomDropdown({ label, icon: Icon, options, value, onChange }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const selectedLabel = options.find((opt) => opt.value === value)?.label || options[0]?.label;
-
-  return (
-    <div className="w-full" ref={dropdownRef}>
-      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-        {label}
-      </label>
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className={`w-full h-11 flex items-center justify-between pl-10 pr-3.5 text-sm font-semibold text-slate-700 bg-slate-50/70 border rounded-2xl transition-all ${
-            isOpen 
-              ? "border-indigo-500 bg-white ring-4 ring-indigo-500/5" 
-              : "border-slate-200/70 hover:border-slate-300 hover:bg-slate-50 bg-slate-50/70"
-          }`}
-        >
-          <Icon size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${isOpen ? "text-indigo-600" : "text-slate-400"}`} />
-          <span className="truncate pr-2">{selectedLabel}</span>
-          <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 ${isOpen ? "rotate-180 text-indigo-600" : ""}`} />
-        </button>
-
-        {isOpen && (
-          <div className="absolute z-50 top-[calc(100%+6px)] left-0 w-full bg-white border border-slate-100 rounded-2xl shadow-xl shadow-slate-200/40 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-            <ul className="max-h-60 overflow-y-auto p-1.5 custom-scrollbar">
-              {options.map((opt) => (
-                <li
-                  key={opt.value}
-                  onClick={() => {
-                    onChange(opt.value);
-                    setIsOpen(false);
-                  }}
-                  className={`px-3.5 py-2.5 text-sm rounded-xl cursor-pointer transition-colors mb-0.5 last:mb-0 ${
-                    value === opt.value
-                      ? "bg-indigo-50 text-indigo-700 font-bold"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium"
-                  }`}
-                >
-                  {opt.label}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // ==========================================
 // COMPONENT: Mini Donut
@@ -162,7 +98,7 @@ export default function Revenue() {
   const [month, setMonth] = useState("");
   const [houseId, setHouseId] = useState("");
 
-  const [houses, setHouses] = useState([]);
+  const { houses } = useHouses();
   const [summary, setSummary] = useState(null);
   const [rawData, setRawData] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -172,10 +108,6 @@ export default function Revenue() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    getHouses().then(setHouses).catch(e => setError(e.message));
-  }, []);
 
   useEffect(() => {
     fetchSummary();

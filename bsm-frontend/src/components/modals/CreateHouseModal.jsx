@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import HouseMap from "./HouseMap";
-
-const API_URL = "http://localhost:5000/api/houses";
+import { createHouse, updateHouse } from "../../api/house.api";
 
 export default function CreateHouseModal({
   house,
@@ -52,9 +51,11 @@ export default function CreateHouseModal({
 
   function handleChange(e) {
     const { name, value } = e.target;
+    // Chỉ convert sang Number nếu là input type="number"
+    const isNumberInput = e.target.type === "number";
     setForm((prev) => ({
       ...prev,
-      [name]: Number.isNaN(Number(value)) ? value : Number(value),
+      [name]: isNumberInput && !Number.isNaN(Number(value)) ? Number(value) : value,
     }));
   }
 
@@ -62,12 +63,12 @@ export default function CreateHouseModal({
     e.preventDefault();
     setError("");
 
-    if (!form.name?.trim()) {
+    if (!form.name || typeof form.name !== 'string' || !form.name.trim()) {
       setError("Tên nhà trọ không được để trống");
       return;
     }
 
-    if (!form.address?.trim()) {
+    if (!form.address || typeof form.address !== 'string' || !form.address.trim()) {
       setError("Địa chỉ không được để trống");
       return;
     }
@@ -90,23 +91,11 @@ export default function CreateHouseModal({
 
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-
-      const res = await fetch(
-        isEdit ? `${API_URL}/${house.id}` : API_URL,
-        {
-          method: isEdit ? "PUT" : "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(form),
-        }
-      );
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Lỗi server");
-
+      if (isEdit) {
+        await updateHouse(house.id, form);
+      } else {
+        await createHouse(form);
+      }
       onSuccess();
     } catch (err) {
       const message = err.message || "Có lỗi xảy ra";
@@ -157,7 +146,7 @@ export default function CreateHouseModal({
             </p>
           </div>
 
-          {form.address?.trim() && <HouseMap address={form.address} />}
+          {form.address && typeof form.address === 'string' && form.address.trim() && <HouseMap address={form.address} />}
 
           <div>
             <label className="text-sm font-medium">
@@ -170,6 +159,11 @@ export default function CreateHouseModal({
               min={createdRooms}
               value={form.totalRooms}
               onChange={handleChange}
+              onInput={(e) => {
+                if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                  e.target.value = e.target.value.replace(/^0+/, '');
+                }
+              }}
               className="w-full mt-1 rounded-xl border px-4 py-2"
             />
 
