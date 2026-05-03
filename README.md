@@ -1,4 +1,4 @@
-# Hệ thống Quản lý Nhà trọ Thông minh (BSM) 🏘️
+# Hệ thống Quản lý Nhà trọ Thông minh (NaThuStay) 🏘️
 
 > Hệ thống quản lý nhà trọ toàn diện tích hợp Trí tuệ nhân tạo (AI) để tối ưu hóa vận hành, dự báo tài chính và hỗ trợ người dùng thông minh.
 
@@ -9,8 +9,20 @@
 
 ---
 
-## � Mục lục
+## 🎥 Video Giới thiệu
 
+Xem video giới thiệu chi tiết về hệ thống quản lý nhà trọ thông minh:
+
+[![BSM - Hệ thống Quản lý Nhà trọ Thông minh](https://img.youtube.com/vi/eP4b93KMKAI/maxresdefault.jpg)](https://youtu.be/eP4b93KMKAI)
+
+**[Xem video trên YouTube](https://youtu.be/eP4b93KMKAI)**
+
+
+---
+
+## 📋 Mục lục
+
+- [Video Giới thiệu](#-video-giới-thiệu)
 - [Tính năng nổi bật](#-tính-năng-nổi-bật)
 - [Công nghệ sử dụng](#-công-nghệ-sử-dụng)
 - [Kiến trúc hệ thống](#-kiến-trúc-hệ-thống)
@@ -414,4 +426,4 @@ Cảm ơn tất cả những người đã đóng góp và hỗ trợ dự án n
 
 **Made with ❤️ by Lê Hoài Nam**
 
-Last Updated: April 24, 2026
+Last Updated: May 4, 2026
