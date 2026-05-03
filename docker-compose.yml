@@ -1,12 +1,12 @@
 services:
   # 2. Backend: Node.js
   backend:
-    build: ./bsm-management-backend
+    build: ./bsm-backend
     container_name: bsm_backend
     ports:
       - "5000:5000"
     env_file:
-      - ./bsm-management-backend/.env
+      - ./bsm-backend/.env
     environment:
       - DB_SERVER=host.docker.internal # Kết nối tới SQL Server trên máy host
 

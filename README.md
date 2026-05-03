@@ -123,7 +123,7 @@ bsm/
 │   │   └── assets/           # Static files
 │   └── package.json
 │
-├── bsm-management-backend/    # Node.js Backend
+├── bsm-backend/               # Node.js Backend
 │   ├── src/
 │   │   ├── controllers/      # Request handlers
 │   │   ├── services/         # Business logic
@@ -168,7 +168,7 @@ cd bsm
 
 ### 3️⃣ Thiết lập Backend
 ```bash
-cd bsm-management-backend
+cd bsm-backend
 
 # Cài đặt dependencies
 npm install
@@ -246,7 +246,7 @@ bsm-frontend/src/
 
 ### Backend Structure
 ```
-bsm-management-backend/src/
+bsm-backend/src/
 ├── controllers/           # Request handlers (14 files)
 ├── services/              # Business logic (25 files)
 ├── repositories/          # Data access layer (13 files)
@@ -325,7 +325,7 @@ npm run test
 
 ### Backend Testing
 ```bash
-cd bsm-management-backend
+cd bsm-backend
 npm run test
 ```
 
