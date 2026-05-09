@@ -20,27 +20,39 @@ router.get("/", async (req, res) => {
     }
 
     const pool = await poolPromise;
+    
+    // ✅ FIX CRITICAL: Query đúng với paid_rooms và total_rooms
     const result = await pool.request()
       .input("houseId", houseId)
       .query(`
+        WITH MonthlyData AS (
+          SELECT 
+            i.month,
+            SUM(i.total_amount) as revenue,
+            COUNT(DISTINCT CASE WHEN i.status = 'PAID' THEN i.room_id END) as paid_rooms
+          FROM invoices i
+          JOIN rooms r ON i.room_id = r.id
+          WHERE r.house_id = @houseId
+          GROUP BY i.month
+        ),
+        TotalRooms AS (
+          SELECT COUNT(*) as total_rooms
+          FROM rooms
+          WHERE house_id = @houseId
+        )
         SELECT 
-          i.month,
-          SUM(i.total_amount) as revenue,
-          COUNT(DISTINCT i.room_id) as paid_rooms
-        FROM invoices i
-        JOIN rooms r ON i.room_id = r.id
-        WHERE r.house_id = @houseId AND i.status = 'PAID'
-        GROUP BY i.month
-        ORDER BY i.month ASC
+          m.month,
+          m.revenue,
+          m.paid_rooms,
+          t.total_rooms
+        FROM MonthlyData m
+        CROSS JOIN TotalRooms t
+        WHERE m.revenue > 0  -- Chỉ lấy tháng có doanh thu
+        ORDER BY m.month ASC
       `);
 
-    // Lấy thêm tổng số phòng để tính occupancy_rate thực tế
-    const roomResult = await pool.request()
-      .input("houseId", houseId)
-      .query(`SELECT COUNT(*) as total_rooms FROM rooms WHERE house_id = @houseId`);
-    const totalRooms = roomResult.recordset[0]?.total_rooms || 1;
-
     const dbData = result.recordset;
+    const totalRooms = dbData[0]?.total_rooms || 1;
 
     const payload = JSON.stringify({
       history: dbData,
@@ -104,7 +116,37 @@ router.get("/", async (req, res) => {
 
   } catch (err) {
     console.error("Dự đoán doanh thu lỗi:", err);
-    res.status(500).json({ error: "Lỗi máy chủ" });
+    
+    // ✅ FIX: Phân loại lỗi rõ ràng
+    if (err.message && err.message.includes('Cần tối thiểu')) {
+      return res.status(400).json({
+        error: "Không đủ dữ liệu",
+        message: err.message,
+        recommendation: "Vui lòng tích lũy thêm dữ liệu hóa đơn đã thanh toán"
+      });
+    }
+    
+    if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEOUT') {
+      return res.status(503).json({
+        error: "Không thể kết nối database",
+        message: "Vui lòng thử lại sau",
+        code: err.code
+      });
+    }
+    
+    if (err.name === 'RequestError') {
+      return res.status(400).json({
+        error: "Lỗi truy vấn dữ liệu",
+        message: "ID nhà trọ không hợp lệ hoặc không tồn tại"
+      });
+    }
+    
+    // Lỗi chung
+    res.status(500).json({ 
+      error: "Lỗi máy chủ",
+      message: "Vui lòng liên hệ admin nếu lỗi tiếp diễn",
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 

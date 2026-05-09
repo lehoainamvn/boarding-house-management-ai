@@ -56,7 +56,14 @@ X = df[['month_index', 'month_of_year', 'quarter', 'occupancy_rate']]
 y = df['revenue']
 
 # 4. HUẤN LUYỆN MÔ HÌNH CHÍNH
-final_model = RandomForestRegressor(n_estimators=200, random_state=42, min_samples_leaf=1)
+# ✅ FIX: Giảm overfitting với hyperparameters tốt hơn
+final_model = RandomForestRegressor(
+    n_estimators=100,      # Giảm từ 200 xuống 100 (đủ rồi)
+    max_depth=10,          # Giới hạn độ sâu
+    min_samples_leaf=3,    # Tăng từ 1 lên 3 (tránh học thuộc lòng)
+    min_samples_split=5,   # Mỗi split cần ít nhất 5 samples
+    random_state=42
+)
 final_model.fit(X, y)
 
 # 5. ĐÁNH GIÁ ĐỘ TIN CẬY
