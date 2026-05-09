@@ -25,7 +25,7 @@ CẤU TRÚC DATABASE ĐẦY ĐỦ:
 1. users (id, name, email, phone, role)
 2. houses (id, owner_id, name, address, total_rooms)
 3. rooms (id, house_id, owner_id, room_name, room_price, electric_price, status)
-   -> status: N'Trống' hoặc N'Đang thuê'
+   -> status: 'EMPTY' (trống) hoặc 'OCCUPIED' (đang thuê)
 4. tenant_rooms (id, room_id, tenant_id, start_date, end_date) -- end_date IS NULL = đang thuê
 5. invoices (id, room_id, tenant_id, month, room_price, electric_used, water_used, total_amount, status)
    -> status: 'UNPAID' (chưa đóng), 'PAID' (đã đóng)
