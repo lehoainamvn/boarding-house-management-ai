@@ -32,19 +32,33 @@ export async function updateSettingsRepo(ownerId, data) {
       WHERE owner_id = @owner_id
     `);
 
-  // 2. Nếu chọn "Áp dụng cho tất cả phòng"
+  // 2. Nếu chọn "Áp dụng cho phòng"
   if (data.apply_to_all) {
-    await pool.request()
+    const request = pool.request()
       .input("owner_id", sql.Int, ownerId)
       .input("room_price", sql.Decimal(12,2), data.default_room_price)
       .input("electric_price", sql.Decimal(12,2), data.default_electric_price)
-      .input("water_price", sql.Decimal(12,2), data.default_water_price)
-      .query(`
+      .input("water_price", sql.Decimal(12,2), data.default_water_price);
+
+    // Nếu có chọn nhà trọ cụ thể
+    if (data.selected_house_id) {
+      request.input("house_id", sql.Int, data.selected_house_id);
+      await request.query(`
+        UPDATE rooms 
+        SET room_price = @room_price, 
+            electric_price = @electric_price, 
+            water_price = @water_price 
+        WHERE owner_id = @owner_id AND house_id = @house_id
+      `);
+    } else {
+      // Cập nhật tất cả phòng
+      await request.query(`
         UPDATE rooms 
         SET room_price = @room_price, 
             electric_price = @electric_price, 
             water_price = @water_price 
         WHERE owner_id = @owner_id
       `);
+    }
   }
 }

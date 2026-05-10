@@ -136,7 +136,14 @@ export default function Messages() {
 
       if (!saved.id) return;
 
-      socket.emit("send_message", saved);
+      // Thêm sender_name vào data gửi qua socket
+      const senderName = user?.full_name || user?.username || "Chủ trọ";
+      console.log("Sending message with sender_name:", senderName, "User:", user);
+      
+      socket.emit("send_message", {
+        ...saved,
+        sender_name: senderName
+      });
       
       setContent("");
       clearSelectedImage();
@@ -245,7 +252,7 @@ export default function Messages() {
         ) : (
           <>
             {/* Chat Header */}
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white shadow-sm z-10">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white shadow-sm z-50">
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-600 text-white flex items-center justify-center font-semibold">

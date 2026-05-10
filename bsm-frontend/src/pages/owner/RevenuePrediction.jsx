@@ -8,7 +8,8 @@ import {
   Brain, TrendingUp, AlertCircle, CheckCircle2,
   Target, Zap, ShieldCheck, BarChart3,
   Lightbulb, ChevronRight, DollarSign, Scale,
-  CalendarDays, ArrowUpRight, ArrowDownRight, Minus
+  CalendarDays, ArrowUpRight, ArrowDownRight, Minus,
+  TrendingDown, AlertTriangle, Star, Award
 } from "lucide-react";
 
 import { getHouses } from "../../api/houseApi";
@@ -44,6 +45,7 @@ export default function RevenuePrediction() {
   const [houseId, setHouseId] = useState("");
   const [months, setMonths] = useState(6);
   const [simOccupancy, setSimOccupancy] = useState(90);
+  const [defaultOccupancy, setDefaultOccupancy] = useState(90); // Lưu giá trị mặc định
   const [chartData, setChartData] = useState([]);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -72,6 +74,15 @@ export default function RevenuePrediction() {
         return;
       }
 
+      // ✅ Cập nhật defaultOccupancy từ kết quả
+      const currentOccupancy = data.insight?.avgOccupancy ?? 90;
+      setDefaultOccupancy(currentOccupancy);
+      
+      // Nếu đây là lần chạy đầu tiên, set simOccupancy = currentOccupancy
+      if (!result) {
+        setSimOccupancy(Math.round(currentOccupancy));
+      }
+
       const history = (data.history || []).map(i => ({
         month: i.month.substring(0, 7),
         "Thực tế": parseFloat(i.revenue),
@@ -94,6 +105,12 @@ export default function RevenuePrediction() {
       toast.error("Lỗi kết nối hệ thống AI", { id: toastId });
       setResult(null);
     } finally { setLoading(false); }
+  }
+
+  // ✅ Hàm reset về tỷ lệ lấp đầy hiện tại
+  function resetOccupancy() {
+    setSimOccupancy(Math.round(defaultOccupancy));
+    toast.success(`Đã đặt lại về ${Math.round(defaultOccupancy)}%`);
   }
 
   const totalPredicted = result?.totalPredicted ?? (result?.predictions?.reduce((s, p) => s + p.realistic, 0) ?? 0);
@@ -238,22 +255,52 @@ export default function RevenuePrediction() {
                     )}
                   </div>
 
-                  {/* ADVICE SECTION */}
-                  <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6">
-                    <h4 className="font-bold text-slate-700 flex items-center gap-2 text-xs uppercase tracking-wider mb-5">
-                      <Lightbulb size={14} className="text-yellow-500" /> Giải mã & Khuyến nghị chi tiết từ AI
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {result.explanations?.map((text, i) => (
-                        <div key={i} className="flex gap-3 items-start bg-slate-50 p-4 rounded-xl border border-slate-100 hover:border-indigo-200 transition-all group">
-                          <div className="p-1.5 bg-emerald-100 rounded-lg text-emerald-600 flex-shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                            <CheckCircle2 size={14} />
-                          </div>
-                          <p className="text-xs text-slate-600 leading-relaxed font-medium">{text}</p>
-                        </div>
-                      ))}
+                  {/* RECOMMENDATIONS SECTION */}
+                  {result.recommendations && result.recommendations.length > 0 && (
+                    <div className="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-2xl border border-indigo-100 shadow-sm p-6">
+                      <h4 className="font-bold text-indigo-900 flex items-center gap-2 text-sm mb-5">
+                        <Target size={16} className="text-indigo-600" /> 
+                        Khuyến nghị hành động từ AI
+                        <span className="ml-auto text-xs font-normal text-indigo-600 bg-indigo-100 px-2 py-1 rounded-full">
+                          {result.recommendations.length} khuyến nghị
+                        </span>
+                      </h4>
+                      <div className="space-y-3">
+                        {result.recommendations.map((rec, i) => {
+                          const priorityConfig = {
+                            high: { color: 'red', icon: AlertTriangle, bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700' },
+                            medium: { color: 'yellow', icon: Star, bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-700' },
+                            low: { color: 'blue', icon: Award, bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' }
+                          };
+                          const config = priorityConfig[rec.priority] || priorityConfig.medium;
+                          const Icon = config.icon;
+                          
+                          return (
+                            <div key={i} className={`${config.bg} border ${config.border} rounded-xl p-4 hover:shadow-md transition-all`}>
+                              <div className="flex items-start gap-3">
+                                <div className={`p-2 ${config.bg} rounded-lg ${config.text} flex-shrink-0`}>
+                                  <Icon size={16} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h5 className={`font-bold text-sm ${config.text}`}>{rec.title}</h5>
+                                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${config.bg} ${config.text}`}>
+                                      {rec.priority}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-slate-600 mb-2 leading-relaxed">{rec.description}</p>
+                                  <div className="flex items-start gap-2 bg-white/60 rounded-lg p-2 border border-slate-200/50">
+                                    <ChevronRight size={12} className="text-indigo-500 mt-0.5 flex-shrink-0" />
+                                    <p className="text-xs font-semibold text-indigo-700">{rec.action}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* RIGHT COLUMN */}
@@ -264,34 +311,72 @@ export default function RevenuePrediction() {
                       <div className="p-1.5 bg-indigo-500/20 rounded-lg"><Zap size={14} className="text-indigo-300" /></div>
                       <h4 className="font-bold text-sm">Giả lập lấp đầy</h4>
                     </div>
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-slate-400 text-xs">Lịch sử TB:</span>
-                      <span className="font-bold text-slate-300">{result.insight?.avgOccupancy ?? "--"}%</span>
+                    
+                    {/* Hiện tại vs Mục tiêu */}
+                    <div className="bg-slate-800/50 rounded-xl p-3 mb-4 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400 text-xs">Hiện tại (TB):</span>
+                        <span className="font-bold text-emerald-400">{Math.round(defaultOccupancy)}%</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400 text-xs">Mục tiêu giả lập:</span>
+                        <span className="font-bold text-indigo-400 text-lg">{simOccupancy}%</span>
+                      </div>
+                      {Math.abs(simOccupancy - defaultOccupancy) > 1 && (
+                        <div className="flex items-center gap-1.5 text-xs pt-1 border-t border-slate-700">
+                          {simOccupancy > defaultOccupancy ? (
+                            <>
+                              <ArrowUpRight size={12} className="text-emerald-400" />
+                              <span className="text-emerald-400 font-semibold">+{(simOccupancy - defaultOccupancy).toFixed(1)}%</span>
+                              <span className="text-slate-500">so với hiện tại</span>
+                            </>
+                          ) : (
+                            <>
+                              <ArrowDownRight size={12} className="text-red-400" />
+                              <span className="text-red-400 font-semibold">{(simOccupancy - defaultOccupancy).toFixed(1)}%</span>
+                              <span className="text-slate-500">so với hiện tại</span>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex justify-between items-center mb-3 text-xl font-bold">
-                      <span className="text-slate-400 text-xs mt-1">Mục tiêu:</span>
-                      <span className="text-indigo-400">{simOccupancy}%</span>
+
+                    {/* Slider */}
+                    <div className="mb-4">
+                      <div className="flex justify-between text-[10px] text-slate-500 mb-1.5">
+                        <span>40%</span>
+                        <span>100%</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="40" 
+                        max="100" 
+                        value={simOccupancy} 
+                        onChange={(e) => setSimOccupancy(parseInt(e.target.value))} 
+                        className="w-full h-1.5 bg-slate-700 rounded-full appearance-none cursor-pointer accent-indigo-500" 
+                      />
                     </div>
-                    <input type="range" min="40" max="100" value={simOccupancy} onChange={(e) => setSimOccupancy(parseInt(e.target.value))} className="w-full h-1.5 bg-slate-700 rounded-full appearance-none cursor-pointer accent-indigo-500 mb-6" />
-                    <button onClick={runPrediction} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-indigo-500/20">Cập nhật kịch bản</button>
+
+                    {/* Buttons */}
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={resetOccupancy}
+                        className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-xl font-semibold text-xs transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <Minus size={12} />
+                        Reset
+                      </button>
+                      <button 
+                        onClick={runPrediction} 
+                        className="flex-[2] bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-1.5"
+                      >
+                        <Zap size={14} fill="currentColor" />
+                        Cập nhật
+                      </button>
+                    </div>
                   </div>
 
-                  {/* WEIGHTS */}
-                  <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5">
-                    <h4 className="font-bold text-slate-700 flex items-center gap-2 text-xs uppercase tracking-wider mb-5">
-                      <BarChart3 size={14} className="text-indigo-500" /> Trọng số phân tích
-                    </h4>
-                    <div className="space-y-4">
-                      {result.insight?.factorWeights && Object.entries(result.insight.factorWeights).map(([key, val]) => (
-                        <div key={key} className="space-y-1.5">
-                          <div className="flex justify-between text-xs font-semibold text-slate-600"><span>{key}</span><span className="text-indigo-600">{val}%</span></div>
-                          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                            <div className="bg-indigo-500 h-full rounded-full transition-all duration-700" style={{ width: `${val}%` }} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+
 
                   {/* ANOMALIES */}
                   {result.anomalies?.length > 0 && (

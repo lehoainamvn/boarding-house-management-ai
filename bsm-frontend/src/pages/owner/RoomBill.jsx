@@ -205,6 +205,7 @@ export default function RoomBill() {
                 <input
                   type="number"
                   placeholder="0"
+                  value={oldElectric}
                   onChange={(e) => setOldElectric(+e.target.value)}
                   onInput={(e) => {
                     if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
@@ -219,6 +220,7 @@ export default function RoomBill() {
                 <input
                   type="number"
                   placeholder="0"
+                  value={newElectric}
                   onChange={(e) => setNewElectric(+e.target.value)}
                   onInput={(e) => {
                     if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
@@ -266,6 +268,7 @@ export default function RoomBill() {
                     <input
                       type="number"
                       placeholder="0"
+                      value={oldWater}
                       onChange={(e) => setOldWater(+e.target.value)}
                       onInput={(e) => {
                         if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
@@ -280,6 +283,7 @@ export default function RoomBill() {
                     <input
                       type="number"
                       placeholder="0"
+                      value={newWater}
                       onChange={(e) => setNewWater(+e.target.value)}
                       onInput={(e) => {
                         if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
