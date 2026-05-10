@@ -22,6 +22,7 @@ router.get("/", async (req, res) => {
     const pool = await poolPromise;
     
     // ✅ FIX CRITICAL: Query đúng với paid_rooms và total_rooms
+    // Lấy 12 tháng gần nhất để hiển thị đầy đủ trên chart
     const result = await pool.request()
       .input("houseId", houseId)
       .query(`
@@ -40,7 +41,7 @@ router.get("/", async (req, res) => {
           FROM rooms
           WHERE house_id = @houseId
         )
-        SELECT 
+        SELECT TOP 12
           m.month,
           m.revenue,
           m.paid_rooms,
@@ -48,25 +49,35 @@ router.get("/", async (req, res) => {
         FROM MonthlyData m
         CROSS JOIN TotalRooms t
         WHERE m.revenue > 0  -- Chỉ lấy tháng có doanh thu
-        ORDER BY m.month ASC
+        ORDER BY m.month DESC
       `);
 
     const dbData = result.recordset;
-    const totalRooms = dbData[0]?.total_rooms || 1;
+    
+    // Reverse để có thứ tự tăng dần (cũ → mới)
+    const historyData = dbData.reverse();
+    const totalRooms = historyData[0]?.total_rooms || 1;
 
     const payload = JSON.stringify({
-      history: dbData,
+      history: historyData.map(row => ({
+        month: row.month,
+        revenue: row.revenue,
+        paid_rooms: row.paid_rooms
+      })),
       months,
-      simOccupancy,
-      totalRooms
+      simOccupancy: parseFloat(simOccupancy),
+      totalRooms,
+      ownerId: req.user?.id || 'anonymous'  // Nếu có auth middleware
     });
 
-    const scriptPath = path.join(__dirname, "../ml/predict_revenue.py");
+    const scriptPath = path.join(__dirname, "../ml/predict_revenue_v2.py");
+    const mlDir = path.join(__dirname, "../ml");
 
     // ✅ FIX QUAN TRỌNG: Linux dùng python3
     const pythonCmd = process.platform === "win32" ? "py" : "python3";
 
     const pythonProcess = spawn(pythonCmd, [scriptPath], {
+      cwd: mlDir,  // Set working directory to ml folder
       stdio: ["pipe", "pipe", "pipe"] // QUAN TRỌNG để tránh lỗi hidden
     });
 

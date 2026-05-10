@@ -151,7 +151,14 @@ export default function TenantContact() {
       const saved = await res.json();
       if (!saved.id) return;
 
-      socket.emit("send_message", saved);
+      // Thêm sender_name vào data gửi qua socket
+      const senderName = user?.full_name || user?.username || "Khách thuê";
+      console.log("Sending message with sender_name:", senderName, "User:", user);
+      
+      socket.emit("send_message", {
+        ...saved,
+        sender_name: senderName
+      });
       
       setContent("");
       clearSelectedImage();

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
 import { getSettings, updateSettings } from "../../api/settingsApi";
+import { getHouses } from "../../api/houseApi";
 import { 
   Save, 
   Zap, 
@@ -10,7 +11,8 @@ import {
   Home, 
   CircleDollarSign,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Building2
 } from "lucide-react";
 
 export default function Settings() {
@@ -19,36 +21,55 @@ export default function Settings() {
     default_electric_price: 0,
     default_water_price: 0,
     default_room_price: 0,
-    apply_to_all: false
+    apply_to_all: false,
+    selected_house_id: null
   });
 
+  const [houses, setHouses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showDayPicker, setShowDayPicker] = useState(false);
   const isFetched = useRef(false);
 
   useEffect(() => {
     if (isFetched.current) return;
     isFetched.current = true;
 
-    async function fetchSettings() {
+    async function fetchData() {
       try {
-        const data = await getSettings();
-        setSettings(prev => ({ ...prev, ...data, apply_to_all: false }));
+        const [settingsData, housesData] = await Promise.all([
+          getSettings(),
+          getHouses()
+        ]);
+        setSettings(prev => ({ ...prev, ...settingsData, apply_to_all: false, selected_house_id: null }));
+        setHouses(housesData);
       } catch (error) {
-        toast.error("Không thể tải cấu hình");
+        toast.error("Không thể tải dữ liệu");
       } finally {
         setLoading(false);
       }
     }
     
-    fetchSettings();
+    fetchData();
   }, []);
+
+  // Close day picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (showDayPicker && !e.target.closest('.day-picker-container')) {
+        setShowDayPicker(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showDayPicker]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setSettings(prev => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : Number(value)
+      [name]: type === "checkbox" ? checked : (name === "selected_house_id" ? (value === "" ? null : Number(value)) : Number(value))
     }));
   };
 
@@ -124,7 +145,7 @@ export default function Settings() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* CARD 1: LỊCH TRÌNH */}
-            <div className="lg:col-span-1 bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200/60 relative overflow-hidden group hover:shadow-md transition-shadow">
+            <div className="lg:col-span-1 bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200/60 relative group hover:shadow-md transition-shadow">
               <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
                 <Calendar size={80} />
               </div>
@@ -133,21 +154,43 @@ export default function Settings() {
               </h2>
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-700">Ngày chốt hóa đơn</label>
-                <div className="relative">
+                <div className="relative day-picker-container">
                   <input
-                    type="number" min="1" max="31"
+                    type="text"
                     name="billing_day"
                     value={settings.billing_day}
-                    onChange={handleChange}
-                    onFocus={(e) => e.target.select()}
-                    onInput={(e) => {
-                      if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
-                        e.target.value = e.target.value.replace(/^0+/, '');
-                      }
-                    }}
-                    className="w-full pl-4 pr-12 py-3.5 bg-slate-50/70 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-600/10 focus:border-indigo-600 focus:bg-white outline-none transition-all font-bold text-lg text-slate-800"
+                    readOnly
+                    onClick={() => setShowDayPicker(!showDayPicker)}
+                    className="w-full pl-4 pr-12 py-3.5 bg-slate-50/70 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-600/10 focus:border-indigo-600 focus:bg-white outline-none transition-all font-bold text-lg text-slate-800 cursor-pointer"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold uppercase">Ngày</span>
+                  <Calendar size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  
+                  {/* Day Picker Dropdown */}
+                  {showDayPicker && (
+                    <div className="absolute z-[100] mt-2 w-full bg-white border-2 border-indigo-200 rounded-2xl shadow-2xl p-4">
+                      <div className="text-xs font-bold text-slate-500 mb-2 text-center">Chọn ngày trong tháng</div>
+                      <div className="grid grid-cols-7 gap-1.5 max-h-[280px] overflow-y-auto">
+                        {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => {
+                              setSettings(prev => ({ ...prev, billing_day: day }));
+                              setShowDayPicker(false);
+                            }}
+                            className={`
+                              p-2.5 rounded-xl text-sm font-bold transition-all
+                              ${settings.billing_day === day 
+                                ? 'bg-indigo-600 text-white shadow-lg scale-105' 
+                                : 'bg-slate-50 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 hover:scale-105'}
+                            `}
+                          >
+                            {day}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <p className="text-[11px] text-slate-400 leading-relaxed mt-2">
                   Hệ thống sẽ gửi thông báo nhắc nhở ghi điện nước vào ngày này mỗi tháng.
@@ -261,13 +304,39 @@ export default function Settings() {
                   className="w-5 h-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                 />
               </div>
-              <div>
+              <div className="flex-1">
                 <span className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                  Cập nhật hàng loạt cho toàn bộ phòng hiện có <RefreshCw size={14} className={settings.apply_to_all ? 'animate-spin' : ''} />
+                  Cập nhật hàng loạt cho phòng hiện có <RefreshCw size={14} className={settings.apply_to_all ? 'animate-spin' : ''} />
                 </span>
-                <p className="text-xs text-slate-500 mt-1">
-                  Kích hoạt tùy chọn này để áp dụng ngay lập tức các mức giá trên cho <strong>tất cả các phòng</strong> đang hoạt động trong hệ thống.
+                <p className="text-xs text-slate-500 mt-1 mb-3">
+                  Kích hoạt tùy chọn này để áp dụng ngay lập tức các mức giá trên cho các phòng đang hoạt động.
                 </p>
+                
+                {settings.apply_to_all && (
+                  <div className="mt-3 space-y-2">
+                    <label className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                      <Building2 size={14} className="text-indigo-500" /> Chọn nhà trọ cần cập nhật
+                    </label>
+                    <select
+                      name="selected_house_id"
+                      value={settings.selected_house_id || ""}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 bg-white border border-indigo-200 rounded-xl focus:ring-4 focus:ring-indigo-600/10 focus:border-indigo-600 outline-none transition-all font-medium text-slate-800"
+                    >
+                      <option value="">Tất cả nhà trọ</option>
+                      {houses.map(house => (
+                        <option key={house.id} value={house.id}>
+                          {house.name} ({house.address})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-indigo-600 font-medium">
+                      {settings.selected_house_id 
+                        ? `✓ Chỉ cập nhật giá cho phòng trong nhà trọ đã chọn` 
+                        : `⚠️ Sẽ cập nhật giá cho TẤT CẢ phòng trong tất cả nhà trọ`}
+                    </p>
+                  </div>
+                )}
               </div>
             </label>
           </div>
