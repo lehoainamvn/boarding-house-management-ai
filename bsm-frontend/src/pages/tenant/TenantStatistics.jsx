@@ -6,11 +6,12 @@ import {
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Tooltip,
   Legend,
   Filler,
 } from "chart.js";
-import { Line } from "react-chartjs-2";
+import { Line, Bar } from "react-chartjs-2";
 import { Zap, Droplets, TrendingUp, TrendingDown, Activity } from "lucide-react";
 
 ChartJS.register(
@@ -18,6 +19,7 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Tooltip,
   Legend,
   Filler
@@ -179,6 +181,23 @@ export default function TenantStatistics() {
     ],
   };
 
+  const invoiceData = {
+    labels: stats.invoices.map((i) => `T${i.month.split('-')[1]}`),
+    datasets: [
+      {
+        label: "Tổng tiền",
+        data: stats.invoices.map((i) => i.amount),
+        backgroundColor: stats.invoices.map((i) => 
+          i.status === "PAID" ? "rgba(99, 102, 241, 0.8)" : "rgba(244, 63, 94, 0.8)"
+        ),
+        borderRadius: 12,
+        hoverBackgroundColor: stats.invoices.map((i) => 
+          i.status === "PAID" ? "rgba(99, 102, 241, 1)" : "rgba(244, 63, 94, 1)"
+        ),
+      },
+    ],
+  };
+
   const electricChange = calculateChange(stats.electric);
   const waterChange = calculateChange(stats.water);
   const currentElectric = stats.electric[stats.electric.length - 1]?.used || 0;
@@ -236,6 +255,38 @@ export default function TenantStatistics() {
           data={waterData} 
           options={getChartOptions('m³')} 
         />
+      </div>
+
+      {/* INVOICE BAR CHART */}
+      <div className="bg-white rounded-[2rem] shadow-[0_2px_10px_-3px_rgba(6,81,237,0.05)] border border-slate-100 p-7 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-[1rem]">
+              <TrendingUp size={20} strokeWidth={2.5} />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-slate-800 text-lg tracking-tight">Thống kê tiền phòng & thanh toán</h3>
+              <p className="text-slate-400 text-xs font-medium">Màu xanh: Đã thanh toán | Màu đỏ: Chưa thanh toán</p>
+            </div>
+          </div>
+        </div>
+        <div className="h-[350px] w-full relative">
+          <Bar 
+            data={invoiceData} 
+            options={{
+              ...getChartOptions('VNĐ'),
+              plugins: {
+                ...getChartOptions('VNĐ').plugins,
+                tooltip: {
+                  ...getChartOptions('VNĐ').plugins.tooltip,
+                  callbacks: {
+                    label: (context) => ` ${context.parsed.y.toLocaleString('vi-VN')} VNĐ`,
+                  }
+                }
+              }
+            }} 
+          />
+        </div>
       </div>
     </div>
   );

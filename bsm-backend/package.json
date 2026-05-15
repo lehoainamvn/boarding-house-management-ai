@@ -4,7 +4,10 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "test:chat": "node test-chat-ai.js",
+    "fix:chat": "node fix-chat-ai.js",
+    "test:fix": "node fix-chat-ai.js && node test-chat-ai.js"
   },
   "dependencies": {
     "axios": "^1.13.6",

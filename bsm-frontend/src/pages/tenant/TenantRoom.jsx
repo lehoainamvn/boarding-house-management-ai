@@ -8,7 +8,8 @@ import {
   Users, 
   Banknote,
   MapPin,
-  Home
+  Home,
+  Calendar
 } from "lucide-react";
 
 export default function TenantRoom() {
@@ -127,6 +128,7 @@ export default function TenantRoom() {
             <div className="col-span-2 border-t border-slate-50 pt-4 grid grid-cols-2 gap-4">
               <Info label="Giá phòng" value={formatMoney(data.room.price)} icon={Banknote} />
               <Info label="Số người đang ở" value={`${data.room.people_count} người`} icon={Users} />
+              <Info label="Ngày vào ở" value={formatDate(data.room.start_date)} icon={Calendar} />
             </div>
           </div>
         </div>
@@ -203,6 +205,16 @@ function Info({ label, value, icon: Icon }) {
       </div>
     </div>
   );
+}
+
+/* ===== FORMAT DATE ===== */
+function formatDate(dateStr) {
+  if (!dateStr) return "Chưa cập nhật";
+  return new Date(dateStr).toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
 }
 
 /* ===== FORMAT MONEY ===== */

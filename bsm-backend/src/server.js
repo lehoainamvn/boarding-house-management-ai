@@ -22,6 +22,7 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import settingsRoutes from "./routes/settingsRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import houseRuleRoutes from "./routes/houseRuleRoutes.js";
 import "./jobs/cron.js";
 /* ✅ IMPORT ĐÚNG */
 import { verifyMail } from "./config/mail.js";
@@ -132,6 +133,7 @@ app.use("/api/predict-revenue", predictRoute);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/house-rules", houseRuleRoutes);
 
 // Flat routes (starting with /api/...)
 app.use("/api", meterRoutes); // covers /api/meters and /api/rooms/:id/meter-readings

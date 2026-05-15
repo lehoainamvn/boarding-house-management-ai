@@ -8,8 +8,10 @@ import {
   FileText,
   Zap,
   Droplets,
-  Home
+  Home,
+  Download
 } from "lucide-react";
+import html2pdf from "html2pdf.js";
 
 import { getTenantInvoiceDetail } from "../../api/tenantApi";
 import { createPaymentUrl } from "../../api/paymentApi";
@@ -52,6 +54,27 @@ export default function TenantInvoiceDetail() {
     }
   }
 
+  // HÀM XUẤT PDF
+  function handleDownloadPDF() {
+    const element = document.getElementById('invoice-content');
+    const opt = {
+      margin:       10,
+      filename:     `HoaDon_Thang${invoice.month}_${invoice.room_name}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { 
+        scale: 2, 
+        useCORS: true,
+        onclone: (clonedDoc) => {
+          // Xóa tất cả các thẻ style và link stylesheet để tránh lỗi oklch của Tailwind v4
+          const styles = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
+          styles.forEach(s => s.remove());
+        }
+      },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(element).save();
+  }
+
   // SKELETON LOADING CAO CẤP
   if (!invoice) {
     return (
@@ -91,27 +114,49 @@ export default function TenantInvoiceDetail() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-white border border-slate-100 px-4 py-2 rounded-xl text-xs font-bold text-slate-500 shadow-sm">
-          <ShieldCheck size={14} className="text-emerald-500" />
-          <span>Bảo mật VNPAY Gateway</span>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={handleDownloadPDF}
+            className="flex items-center gap-2 bg-white border border-slate-100 px-4 py-2 rounded-xl text-xs font-bold text-slate-500 shadow-sm hover:bg-slate-50 transition-colors"
+          >
+            <Download size={14} className="text-indigo-600" />
+            Tải PDF
+          </button>
+          <div className="flex items-center gap-2 bg-white border border-slate-100 px-4 py-2 rounded-xl text-xs font-bold text-slate-500 shadow-sm">
+            <ShieldCheck size={14} className="text-emerald-500" />
+            <span>Bảo mật VNPAY Gateway</span>
+          </div>
         </div>
       </div>
 
       {/* KHU VỰC HIỂN THỊ HÓA ĐƠN - MÔ PHỎNG TỜ HÓA ĐƠN SÁNG TRỌNG */}
-      <div className="max-w-3xl mx-auto bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+      <div 
+        id="invoice-content" 
+        style={{ 
+          backgroundColor: '#ffffff', 
+          color: '#1e293b',
+          maxWidth: '48rem',
+          marginLeft: 'auto',
+          marginRight: 'auto',
+          borderRadius: '1.5rem',
+          border: '1px solid #f1f5f9',
+          overflow: 'hidden',
+          fontFamily: 'sans-serif'
+        }}
+      >
         
         {/* TIÊU ĐỀ HÓA ĐƠN */}
-        <div className="bg-slate-50/70 p-8 border-b border-slate-100">
-          <div className="flex justify-between items-start">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-indigo-600 text-white rounded-xl">
+        <div style={{ backgroundColor: '#f8fafc', padding: '2rem', borderBottom: '1px solid #f1f5f9' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ backgroundColor: '#4f46e5', color: '#ffffff', padding: '0.625rem', borderRadius: '0.75rem' }}>
                 <FileText size={20} />
               </div>
               <div>
-                <p className="text-xs text-slate-400 uppercase tracking-wider font-bold">
+                <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
                   Kỳ thanh toán
                 </p>
-                <p className="text-xl font-bold text-slate-800">
+                <p style={{ fontSize: '1.25rem', fontWeight: '700', color: '#1e293b', margin: 0 }}>
                   Tháng {invoice.month}
                 </p>
               </div>
@@ -121,13 +166,13 @@ export default function TenantInvoiceDetail() {
         </div>
 
         {/* DANH SÁCH CHI PHÍ */}
-        <div className="p-8 space-y-6">
-          <div className="space-y-4">
+        <div style={{ padding: '2rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <Row label="Tên phòng" value={invoice.room_name} icon={Home} />
-            <div className="border-t border-slate-50 pt-4">
+            <div style={{ borderTop: '1px solid #f8fafc', paddingTop: '1rem' }}>
               <Row label="Tiền phòng cố định" value={formatMoney(invoice.room_price)} icon={FileText} />
             </div>
-            <div className="border-t border-slate-50 pt-4">
+            <div style={{ borderTop: '1px solid #f8fafc', paddingTop: '1rem' }}>
               <Row 
                 label="Tiền điện sử dụng" 
                 value={formatMoney(invoice.electric_cost)} 
@@ -135,7 +180,7 @@ export default function TenantInvoiceDetail() {
                 icon={Zap}
               />
             </div>
-            <div className="border-t border-slate-50 pt-4">
+            <div style={{ borderTop: '1px solid #f8fafc', paddingTop: '1rem' }}>
               <Row 
                 label="Tiền nước sử dụng" 
                 value={formatMoney(invoice.water_cost)} 
@@ -146,18 +191,18 @@ export default function TenantInvoiceDetail() {
           </div>
 
           {/* HIỆU ỨNG ĐƯỜNG RĂNG CƯA GIẢ LẬP */}
-          <div className="relative border-t border-dashed border-slate-200 my-6 -mx-8">
-            <div className="absolute -left-2.5 -top-2.5 w-5 h-5 bg-slate-50 rounded-full border-r border-slate-100"></div>
-            <div className="absolute -right-2.5 -top-2.5 w-5 h-5 bg-slate-50 rounded-full border-l border-slate-100"></div>
+          <div style={{ position: 'relative', borderTop: '1px dashed #e2e8f0', margin: '1.5rem -2rem' }}>
+            <div style={{ position: 'absolute', left: '-0.625rem', top: '-0.625rem', width: '1.25rem', height: '1.25rem', backgroundColor: '#f8fafc', borderRadius: '9999px', borderRight: '1px solid #f1f5f9' }}></div>
+            <div style={{ position: 'absolute', right: '-0.625rem', top: '-0.625rem', width: '1.25rem', height: '1.25rem', backgroundColor: '#f8fafc', borderRadius: '9999px', borderLeft: '1px solid #f1f5f9' }}></div>
           </div>
 
           {/* TỔNG CỘNG */}
-          <div className="flex justify-between items-center bg-slate-50/50 -mx-8 px-8 py-5 -mb-8 mt-6 border-t border-slate-100">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc', margin: '1.5rem -2rem -2rem -2rem', padding: '1.25rem 2rem', borderTop: '1px solid #f1f5f9' }}>
             <div>
-              <span className="font-bold text-slate-700 text-base">Tổng tiền cần trả</span>
-              <p className="text-xs text-slate-400 font-medium">Đã bao gồm VAT và các phí dịch vụ</p>
+              <span style={{ fontWeight: '700', color: '#334155', fontSize: '1rem' }}>Tổng tiền cần trả</span>
+              <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '500', margin: 0 }}>Đã bao gồm VAT và các phí dịch vụ</p>
             </div>
-            <span className="text-3xl font-black text-indigo-600 tracking-tight">
+            <span style={{ fontSize: '1.875rem', fontWeight: '900', color: '#4f46e5', letterSpacing: '-0.025em' }}>
               {formatMoney(invoice.total_amount)}
             </span>
           </div>
@@ -202,15 +247,15 @@ export default function TenantInvoiceDetail() {
 // Helper Components
 function Row({ label, value, subValue, icon: Icon }) {
   return (
-    <div className="flex justify-between items-start text-sm">
-      <div className="flex items-start gap-2.5">
-        {Icon && <Icon size={16} className="text-slate-400 mt-0.5" />}
-        <div className="flex flex-col">
-          <span className="text-slate-600 font-medium">{label}</span>
-          {subValue && <span className="text-xs text-slate-400 font-bold mt-0.5">{subValue}</span>}
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', fontSize: '0.875rem' }}>
+      <div style={{ display: 'flex', alignItems: 'start', gap: '0.625rem' }}>
+        {Icon && <Icon size={16} style={{ color: '#94a3b8', marginTop: '0.125rem' }} />}
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span style={{ color: '#475569', fontWeight: '500' }}>{label}</span>
+          {subValue && <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', marginTop: '0.125rem' }}>{subValue}</span>}
         </div>
       </div>
-      <span className="font-bold text-slate-800 text-sm">
+      <span style={{ fontWeight: '700', color: '#1e293b', fontSize: '0.875rem' }}>
         {value}
       </span>
     </div>
@@ -221,15 +266,25 @@ function StatusBadge({ status }) {
   const isPaid = status === "PAID";
   return (
     <div
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full border ${
-        isPaid
-          ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-          : "bg-rose-50 text-rose-700 border-rose-100"
-      }`}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.375rem',
+        padding: '0.375rem 0.75rem',
+        fontSize: '0.75rem',
+        fontWeight: '700',
+        borderRadius: '9999px',
+        border: isPaid ? '1px solid #d1fae5' : '1px solid #ffe4e6',
+        backgroundColor: isPaid ? '#ecfdf5' : '#fff1f2',
+        color: isPaid ? '#047857' : '#be123c'
+      }}
     >
-      <span className={`w-1.5 h-1.5 rounded-full ${
-        isPaid ? "bg-emerald-500 animate-pulse" : "bg-rose-500 animate-pulse"
-      }`}></span>
+      <span style={{
+        width: '0.375rem',
+        height: '0.375rem',
+        borderRadius: '9999px',
+        backgroundColor: isPaid ? '#10b981' : '#f43f5e'
+      }}></span>
       {isPaid ? "Đã thanh toán" : "Chưa thanh toán"}
     </div>
   );

@@ -8,7 +8,8 @@ import {
   Zap,
   BarChart3,
   MessageSquare,
-  Brain
+  Brain,
+  ClipboardList
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -27,26 +28,26 @@ export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [openUserMenu, setOpenUserMenu] = useState(false);
   const [openNotify, setOpenNotify] = useState(false);
-  const [showAllModal, setShowAllModal] = useState(false); 
+  const [showAllModal, setShowAllModal] = useState(false);
 
   const [user, setUser] = useState({ id: null, name: "Chủ trọ", email: "" });
-  
-  const { 
-    notifications, 
-    unreadCount, 
-    markReadAll, 
-    deleteNotify, 
-    clearAll, 
-    markRead 
+
+  const {
+    notifications,
+    unreadCount,
+    markReadAll,
+    deleteNotify,
+    clearAll,
+    markRead
   } = useNotifications(user.id);
 
   useEffect(() => {
     const savedUser = JSON.parse(localStorage.getItem("user")) || JSON.parse(localStorage.getItem("profile"));
     if (savedUser) {
-      setUser({ 
-        id: savedUser.id, 
-        name: savedUser.name || "Chủ trọ", 
-        email: savedUser.email || "" 
+      setUser({
+        id: savedUser.id,
+        name: savedUser.name || "Chủ trọ",
+        email: savedUser.email || ""
       });
     }
   }, []);
@@ -66,20 +67,20 @@ export default function DashboardLayout() {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('profile'); // Backup key nếu có
-      
+
       // Hiển thị thông báo thành công
       toast.success('Đăng xuất thành công');
-      
+
       // Chuyển hướng về trang login
       navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
-      
+
       // Vẫn đăng xuất dù có lỗi (fail-safe)
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('profile');
-      
+
       // Fallback navigation
       try {
         navigate('/login');
@@ -101,23 +102,24 @@ export default function DashboardLayout() {
   };
 
   const menu = [
-    { label: "Dashboard", path: "/home", icon: Home },
+    { label: "Trang chủ", path: "/home", icon: Home },
     { label: "Phòng trọ", path: "/rooms", icon: DoorOpen },
     { label: "Khách thuê", path: "/tenants", icon: Users },
     { label: "Hóa đơn", path: "/invoices", icon: Receipt },
     { label: "Điện nước", path: "/meters", icon: Zap },
     { label: "Thống kê", path: "/revenue", icon: BarChart3 },
     { label: "Tin nhắn", path: "/messages", icon: MessageSquare },
-    { label: "AI Prediction", path: "/prediction", icon: Brain }
+    { label: "AI Prediction", path: "/prediction", icon: Brain },
+    { label: "Nội quy", path: "/rules", icon: ClipboardList }
   ];
 
   return (
     <div className="flex h-screen bg-slate-50/50 font-sans text-slate-900">
-      <Sidebar 
-        menu={menu} 
-        sidebarOpen={sidebarOpen} 
-        setSidebarOpen={setSidebarOpen} 
-        handleLogout={handleLogout} 
+      <Sidebar
+        menu={menu}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        handleLogout={handleLogout}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -127,7 +129,7 @@ export default function DashboardLayout() {
           </div>
 
           <div className="flex items-center gap-4">
-            <NotificationMenu 
+            <NotificationMenu
               notifications={notifications}
               unreadCount={unreadCount}
               openNotify={openNotify}
@@ -140,7 +142,7 @@ export default function DashboardLayout() {
               setShowAllModal={setShowAllModal}
             />
 
-            <UserMenu 
+            <UserMenu
               user={user}
               openUserMenu={openUserMenu}
               setOpenUserMenu={setOpenUserMenu}
@@ -158,7 +160,7 @@ export default function DashboardLayout() {
         </main>
       </div>
 
-      <NotificationModal 
+      <NotificationModal
         show={showAllModal}
         onClose={() => setShowAllModal(false)}
         notifications={notifications}

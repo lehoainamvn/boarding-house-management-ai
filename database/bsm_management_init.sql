@@ -251,4 +251,19 @@ CREATE TABLE settings (
 
     FOREIGN KEY (owner_id) REFERENCES users(id)
 );
+/* =========================
+   HOUSE RULES
+========================= */
+CREATE TABLE house_rules (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+
+    house_id INT NOT NULL,
+
+    title NVARCHAR(100) NOT NULL,
+    content NVARCHAR(1000) NOT NULL,
+
+    created_at DATETIME DEFAULT GETDATE(),
+
+    FOREIGN KEY (house_id) REFERENCES houses(id)
+);
 GO

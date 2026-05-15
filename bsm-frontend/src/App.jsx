@@ -20,6 +20,7 @@ import Profile from "./pages/owner/Profile";
 import ChangePassword from "./pages/owner/ChangePassword";
 import Messages from "./pages/owner/Messages";
 import RevenuePrediction from "./pages/owner/RevenuePrediction";
+import HouseRules from "./pages/owner/HouseRules";
 
 
 /* TENANT */
@@ -72,6 +73,7 @@ export default function App() {
         <Route path="/change-password" element={<ChangePassword />} />
         <Route path="/messages" element={<Messages />} />
         <Route path="/prediction" element={<RevenuePrediction />} />
+        <Route path="/rules" element={<HouseRules />} />
        
         
       </Route>
