@@ -26,6 +26,11 @@ export async function getTenantStatisticsService(tenantId) {
     water: rows.map(r => ({
       month: r.month,
       used: r.water_used
+    })),
+    invoices: rows.map(r => ({
+      month: r.month,
+      amount: r.total_amount,
+      status: r.status
     }))
   };
 }
@@ -218,7 +223,8 @@ export async function getTenantDashboardService(tenantId) {
       water_price: dashboard.water_price,
       water_price_per_person: dashboard.water_price_per_person,
       people_count: dashboard.people_count,
-      status: dashboard.status
+      status: dashboard.status,
+      start_date: dashboard.start_date
     },
     house: {
       id: dashboard.house_id,

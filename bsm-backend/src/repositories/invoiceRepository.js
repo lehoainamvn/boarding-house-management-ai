@@ -387,7 +387,9 @@ export async function getTenantStatisticsRepo(tenantId) {
       SELECT 
         month,
         electric_used,
-        water_used
+        water_used,
+        total_amount,
+        status
       FROM invoices
       WHERE tenant_id = @tenant_id
       ORDER BY month ASC

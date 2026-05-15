@@ -89,7 +89,8 @@ export async function getTenantDashboardRepo(tenantId) {
 
           h.id AS house_id,
           h.name AS house_name,
-          h.address
+          h.address,
+          tr.start_date
 
       FROM tenant_rooms tr
       JOIN users u ON tr.tenant_id = u.id
@@ -151,4 +152,20 @@ export async function getTenantNotificationsRepo(tenantId) {
     `);
 
   return result.recordset[0];
+}
+
+export async function getTenantsInHouseRepo(houseId) {
+  const pool = await poolPromise;
+  const result = await pool.request()
+    .input("house_id", sql.Int, houseId)
+    .query(`
+      SELECT DISTINCT u.id
+      FROM users u
+      JOIN tenant_rooms tr ON u.id = tr.tenant_id
+      JOIN rooms r ON tr.room_id = r.id
+      WHERE r.house_id = @house_id
+        AND tr.end_date IS NULL
+        AND u.role = 'TENANT'
+    `);
+  return result.recordset;
 }
