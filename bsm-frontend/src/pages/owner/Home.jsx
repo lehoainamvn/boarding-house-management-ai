@@ -7,8 +7,6 @@ import CreateHouseModal from "../../components/modals/CreateHouseModal";
 import AddButton from "../../components/common/AddButton";
 import { useHouses } from "../../hooks/useHouses";
 
-const API_URL = "http://localhost:5000/api/houses";
-
 export default function Home() {
   const { houses, loading, deleteHouse, refreshHouses } = useHouses();
 

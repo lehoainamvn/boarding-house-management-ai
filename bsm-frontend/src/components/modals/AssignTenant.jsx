@@ -1,5 +1,6 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { API_BASE_URL } from "../../config";
 
 export default function AssignTenant({ roomId, onSuccess }) {
   const [type, setType] = useState("EXISTING");
@@ -45,7 +46,7 @@ export default function AssignTenant({ roomId, onSuccess }) {
             };
 
       const res = await fetch(
-        `http://localhost:5000/api/rooms/${roomId}/assign-tenant`,
+        `${API_BASE_URL}/rooms/${roomId}/assign-tenant`,
         {
           method: "POST",
           headers: {

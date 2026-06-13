@@ -2,8 +2,9 @@ import { useEffect, useState, useRef } from "react";
 import { getSocket } from "../../socket";
 import { Send, User, ShieldCheck, MoreVertical, Paperclip, Smile, X, Image as ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
+import { API_BASE_URL } from "../../config";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = API_BASE_URL;
 
 export default function TenantContact() {
   const [messages, setMessages] = useState([]);
