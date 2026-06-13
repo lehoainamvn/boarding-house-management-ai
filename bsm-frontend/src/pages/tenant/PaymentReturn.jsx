@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { API_BASE_URL } from "../../config";
 
 export default function PaymentReturn() {
   const [searchParams] = useSearchParams();
@@ -13,7 +14,7 @@ export default function PaymentReturn() {
       try {
         const token = localStorage.getItem("token");
         // Gửi toàn bộ query string từ VNPay lên backend để xác thực
-        const res = await fetch(`http://localhost:5000/api/payment/vnpay-return?${searchParams.toString()}`, {
+        const res = await fetch(`${API_BASE_URL}/payment/vnpay-return?${searchParams.toString()}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         

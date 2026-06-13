@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Bar } from "react-chartjs-2";
 import ReactMarkdown from "react-markdown"; 
 import remarkGfm from "remark-gfm"; // <-- ĐÃ THÊM: Import plugin để vẽ bảng
+import { API_BASE_URL } from "../../config";
 
 import {
   Chart as ChartJS,
@@ -73,7 +74,7 @@ export default function AIChatBox(){
 
       const token = localStorage.getItem("token"); 
 
-      const res = await fetch("http://localhost:5000/api/ai/chat", {
+      const res = await fetch(`${API_BASE_URL}/ai/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

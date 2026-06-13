@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react"
 import { Bot, User, Send, X, Sparkles } from "lucide-react"
+import { API_BASE_URL } from "../../config"
 
 export default function TenantAIChatBox(){
 
@@ -46,7 +47,7 @@ export default function TenantAIChatBox(){
 
     try{
 
-      const res = await fetch("http://localhost:5000/api/ai-tenant/chat",{
+      const res = await fetch(`${API_BASE_URL}/ai-tenant/chat`,{
         method:"POST",
         headers:{ "Content-Type":"application/json" },
         body:JSON.stringify({

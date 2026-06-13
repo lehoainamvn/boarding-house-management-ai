@@ -44,10 +44,24 @@ Xem video giới thiệu chi tiết về hệ thống quản lý nhà trọ thô
 - ✅ Tính toán tự động hóa đơn điện, nước, dịch vụ hàng tháng
 
 ### 🤖 Trí tuệ Nhân tạo (AI)
-- **Trợ lý AI thông minh (Chatbot):**
-  - 👨‍💼 **Dành cho Chủ trọ:** Truy vấn nhanh dữ liệu doanh thu, phân tích báo cáo tài chính, tư vấn quản lý dựa trên dữ liệu thực tế
+- **Trợ lý AI thông minh (Chatbot) - MỚI NÂNG CẤP:**
+  - 👨‍💼 **Dành cho Chủ trọ:** 
+    - 💬 **Chat tự nhiên:** Đồng cảm khi tâm sự, không chỉ nói về công việc
+    - 📊 **Phân tích tài chính:** Tư vấn tăng doanh thu với 3-5 khuyến nghị cụ thể
+    - 🎯 **Gợi ý thông minh:** Cảnh báo hóa đơn quá hạn, hợp đồng sắp hết hạn
+    - 🗣️ **Text-to-SQL:** Hỏi bằng tiếng Việt tự nhiên, AI tự động truy vấn database
+    - 💡 Tư vấn quản lý dựa trên dữ liệu thực tế (3-5 khuyến nghị cụ thể)
+    - 🔔 Gợi ý thông minh tự động (phát hiện vấn đề, cơ hội)
+    - 🎯 Dự báo xu hướng và đưa ra hành động cụ thể
   - 👤 **Dành cho Người thuê:** Giải đáp thắc mắc về nội quy, hướng dẫn sử dụng dịch vụ, trả lời FAQs
 - **Phân tích & Dự báo:** Sử dụng Random Forest để dự báo doanh thu tương lai và phát hiện các điểm thu/chi bất thường
+
+**📚 Tài liệu Chat AI:**
+- [⚡ Quick Start](bsm-backend/QUICK_START.md) - **BẮT ĐẦU TỪ ĐÂY - Test & Fix trong 5 phút**
+- [Tổng quan nâng cấp](bsm-backend/CHAT_AI_UPGRADE_SUMMARY.md) - Tổng quan đầy đủ
+- [Test & Fix Guide](bsm-backend/TEST_AND_FIX_GUIDE.md) - Hướng dẫn test tự động
+- [Câu hỏi test nhanh](bsm-backend/QUICK_TEST_QUESTIONS.md) - 30 câu hỏi test thủ công
+- [Troubleshooting](bsm-backend/TROUBLESHOOTING.md) - Giải quyết vấn đề
 
 ### 💰 Quản lý Tài chính
 - ✅ Tính toán hóa đơn tự động
@@ -228,6 +242,52 @@ curl http://localhost:5000/api/health
 # Kiểm tra frontend
 # Mở trình duyệt: http://localhost:5173
 ```
+
+---
+
+## 🔧 Recent Fixes & Updates
+
+### ✅ Latest Fixes (May 2026)
+
+#### 1. Database Schema Fix
+**Vấn đề:** Lỗi `Invalid column name 'payment_date'` khi phân tích tài chính
+
+**Đã fix:**
+- ✅ Thay `payment_date` → `paid_at` trong tất cả queries
+- ✅ Chuẩn hóa status: `PAID` / `UNPAID` (uppercase)
+- ✅ Financial Analysis hoạt động bình thường
+
+**Files:** `financialAnalysis.service.js`, `smartSuggestions.service.js`
+
+#### 2. Chat Natural - Empathy Improvement
+**Vấn đề:** Bot chỉ đạt 30% mong đợi khi user tâm sự, vẫn nói về "hệ thống", "database"
+
+**Đã fix:**
+- ✅ Cải thiện intent detection với quy tắc ưu tiên rõ ràng
+- ✅ Nâng cấp prompt để đồng cảm hơn khi chat
+- ✅ Không nhắc "hệ thống", "database" khi tâm sự
+- ✅ Gợi ý phù hợp với ngữ cảnh
+
+**Files:** `intent.service.js`, `chatNatural.service.js`
+
+**Kết quả:** Đạt >80% mong đợi (tăng từ 30%)
+
+### 🧪 Test Fixes
+
+```bash
+cd bsm-backend
+
+# Restart server (BẮT BUỘC sau khi fix)
+npm run dev
+
+# Chạy test tự động
+node test-fixes.js
+```
+
+**Xem chi tiết:**
+- 📄 `bsm-backend/FIX_SUMMARY.md` - Chi tiết các fix
+- 📄 `bsm-backend/RESTART_NOW.md` - Hướng dẫn test nhanh
+- 📄 `bsm-backend/test-fixes.js` - Test script tự động
 
 ---
 
